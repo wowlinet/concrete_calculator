@@ -1,0 +1,156 @@
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Navigation } from "@/components/navigation";
+import { Breadcrumb } from "@/components/breadcrumb";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: {
+    default: "Concrete Calculator - Professional Concrete Volume Calculation Tool",
+    template: "%s | Concrete Calculator"
+  },
+  description: "Free online concrete calculator to help you accurately calculate concrete volume required for various construction projects. Supports different strength grades, mix ratio calculations, and provides professional construction advice.",
+  keywords: ["concrete calculator", "concrete volume calculation", "construction engineering", "construction calculation", "cement calculation", "building materials", "concrete mix ratio", "construction tools"],
+  authors: [{ name: "Concrete Calculator Team", url: "https://concrete-calculator.com" }],
+  creator: "Concrete Calculator",
+  publisher: "Concrete Calculator",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL("https://concrete-calculator.com"),
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://concrete-calculator.com",
+    title: "Concrete Calculator - Professional Concrete Volume Calculation Tool",
+    description: "Free online concrete calculator to help you accurately calculate concrete volume required for various construction projects. Supports different strength grades, mix ratio calculations, and provides professional construction advice.",
+    siteName: "Concrete Calculator",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Concrete Calculator - Professional Construction Tool",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Concrete Calculator - Professional Concrete Volume Calculation Tool",
+    description: "Free online concrete calculator to help you accurately calculate concrete volume required for various construction projects.",
+    images: ["/twitter-image.jpg"],
+    creator: "@concretecalc",
+  },
+  verification: {
+    google: "your-google-verification-code",
+    yandex: "your-yandex-verification-code",
+    yahoo: "your-yahoo-verification-code",
+  },
+  category: "construction",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "white" },
+    { media: "(prefers-color-scheme: dark)", color: "black" },
+  ],
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Concrete Calculator",
+    "description": "Professional concrete volume calculation tool for construction projects",
+    "url": "https://concrete-calculator.com",
+    "applicationCategory": "ConstructionApplication",
+    "operatingSystem": "Web Browser",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Organization",
+      "name": "Concrete Calculator Team"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Concrete Calculator"
+    },
+    "featureList": [
+      "Concrete volume calculation",
+      "Material quantity estimation",
+      "Cost calculation",
+      "Multiple project types support",
+      "Unit conversion (metric/imperial)"
+    ]
+  };
+
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background font-sans`}
+      >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <div className="relative flex min-h-screen flex-col">
+            <Navigation />
+            <Breadcrumb />
+            <main className="flex-1">{children}</main>
+            <footer className="border-t border-border py-6 md:py-0">
+              <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
+                <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
+                  © 2024 Concrete Calculator. All rights reserved.
+                </p>
+              </div>
+            </footer>
+          </div>
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}

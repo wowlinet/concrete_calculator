@@ -131,10 +131,10 @@ export default function ConcreteCalculator() {
       onChange={(e) => onChange(e.target.value as UnitType)}
       className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground border-border ${className}`}
     >
-      <option value="feet">foot</option>
-      <option value="inches">inch</option>
-      <option value="yards">yard</option>
-      <option value="meters">meter</option>
+      <option value="feet">feet</option>
+      <option value="inches">inches</option>
+      <option value="yards">yards</option>
+      <option value="meters">meters</option>
       <option value="centimeters">centimeters</option>
     </select>
   );

@@ -688,7 +688,7 @@ export default function ConcreteCalculator() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-muted-foreground mb-2">
-                    Length (l)
+                    Length (L)
                   </label>
                   <div className="flex gap-1">
                     <input
@@ -708,7 +708,7 @@ export default function ConcreteCalculator() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-muted-foreground mb-2">
-                    Width (w)
+                    Width (W)
                   </label>
                   <div className="flex gap-1">
                     <input
@@ -728,7 +728,7 @@ export default function ConcreteCalculator() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-muted-foreground mb-2">
-                    Thickness or Height (h)
+                    Thickness or Height (H)
                   </label>
                   <div className="flex gap-1">
                     <input
@@ -767,7 +767,7 @@ export default function ConcreteCalculator() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-muted-foreground mb-2">
-                    Diameter (d)
+                    Diameter (D)
                   </label>
                   <div className="flex gap-1">
                     <input
@@ -787,7 +787,7 @@ export default function ConcreteCalculator() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-muted-foreground mb-2">
-                    Depth or Height (h)
+                    Depth or Height (H)
                   </label>
                   <div className="flex gap-1">
                     <input
@@ -826,7 +826,7 @@ export default function ConcreteCalculator() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-muted-foreground mb-2">
-                    Outer Diameter (d1)
+                    Outer Diameter (D1)
                   </label>
                   <div className="flex gap-1">
                     <input
@@ -846,7 +846,7 @@ export default function ConcreteCalculator() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-muted-foreground mb-2">
-                    Inner Diameter (d2)
+                    Inner Diameter (D2)
                   </label>
                   <div className="flex gap-1">
                     <input
@@ -866,7 +866,7 @@ export default function ConcreteCalculator() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-muted-foreground mb-2">
-                    Length or Height (h)
+                    Length or Height (H)
                   </label>
                   <div className="flex gap-1">
                     <input

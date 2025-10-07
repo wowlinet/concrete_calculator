@@ -1128,7 +1128,7 @@ export default function ConcreteCalculator() {
               <img
                 src={getProjectTypeImage(projectType)}
                 alt={`${projectTypes[projectType].name} diagram`}
-                className="w-full h-auto object-contain rounded-lg border border-border bg-muted/20 p-4"
+                className="w-full h-auto object-contain rounded-lg border border-border bg-muted/20 dark:bg-white/20 p-4"
               />
               <p className="text-center text-sm text-muted-foreground mt-2">
                 {projectTypes[projectType].name} Shape

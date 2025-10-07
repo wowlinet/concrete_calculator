@@ -20,6 +20,41 @@ npm run start        # Start production server
 npm run lint         # Run ESLint to check code quality
 ```
 
+## Environment Configuration
+
+**Google Analytics Setup:**
+
+This project uses Google Analytics 4 (GA4) for tracking via Next.js third-party library integration.
+
+1. **Get your GA4 Measurement ID:**
+   - Visit [Google Analytics](https://analytics.google.com/)
+   - Create a new GA4 property or use an existing one
+   - Find your Measurement ID (format: `G-XXXXXXXXXX`)
+
+2. **Configure the environment variable:**
+   - Copy `.env.example` to `.env.local`:
+     ```bash
+     cp .env.example .env.local
+     ```
+   - Edit `.env.local` and set your GA4 Measurement ID:
+     ```
+     NEXT_PUBLIC_GA_ID=G-YOUR-MEASUREMENT-ID
+     ```
+
+3. **How it works:**
+   - The `GoogleAnalytics` component from `@next/third-parties/google` is included in `src/app/layout.tsx`
+   - It only loads when `NEXT_PUBLIC_GA_ID` is set
+   - No analytics will be loaded in development if the variable is not set
+
+4. **Reference:**
+   - [Next.js Third-Party Libraries - Google Analytics](https://nextjs.org/docs/app/building-your-application/optimizing/third-party-libraries#google-analytics)
+   - [Google Analytics Setup](https://support.google.com/analytics/answer/9304153)
+
+**Important Notes:**
+- `.env.local` is gitignored and should never be committed
+- Use `.env.example` as a template for required environment variables
+- The `NEXT_PUBLIC_` prefix makes the variable accessible in the browser
+
 ## Project Architecture
 
 This is a Next.js 15 concrete calculator web application built with React 19, TypeScript, and Tailwind CSS 4.
@@ -63,7 +98,7 @@ This is a Next.js 15 concrete calculator web application built with React 19, Ty
 - Comprehensive metadata in root layout (src/app/layout.tsx)
 - Structured data (JSON-LD) for WebApplication schema
 - OpenGraph and Twitter meta tags
-- Google Analytics integration via @next/third-parties (GA ID placeholder: G-XXXXXXXXXX)
+- Google Analytics 4 integration via @next/third-parties (configured via NEXT_PUBLIC_GA_ID environment variable)
 - Robots meta tags configured for indexing
 
 ### Data Models

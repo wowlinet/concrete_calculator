@@ -146,8 +146,10 @@ export default function RootLayout({
             <Footer />
           </div>
         </ThemeProvider>
-        {/* Google Analytics - Replace 'G-XXXXXXXXXX' with your actual GA4 Measurement ID */}
-        <GoogleAnalytics gaId="G-XXXXXXXXXX" />
+        {/* Google Analytics - Configured via NEXT_PUBLIC_GA_ID environment variable */}
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
+        )}
       </body>
     </html>
   );

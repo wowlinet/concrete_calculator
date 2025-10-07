@@ -1,4 +1,4 @@
-import { Building2, Calculator, Shield, Users, Award, CheckCircle, BookOpen } from 'lucide-react';
+import { Building2, Calculator, CheckCircle, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import { Metadata } from 'next';
 

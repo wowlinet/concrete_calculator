@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Calculator, Building2, Shield, Check, Square, Layers, Ruler, Target, Clock } from "lucide-react";
+import { Calculator, Building2, Check, Square, Layers, Ruler, Target, Clock } from "lucide-react";
 import SlabCalculator from "@/components/slab-calculator";
 import SlabFAQItem from "@/components/slab-faq-item";
 import { Metadata } from "next";
@@ -12,6 +12,9 @@ export const metadata: Metadata = {
     title: "Concrete Slab Calculator - Calculate Volume, Materials & Cost for Slabs",
     description: "Professional concrete slab calculator for accurate volume, material quantities and cost estimation. Calculate concrete needs for floor slabs, garage slabs, basement slabs, and more. Free online tool.",
     type: "website",
+  },
+  alternates: {
+    canonical: "/slab-calculator",
   },
   twitter: {
     card: "summary_large_image",
@@ -292,8 +295,8 @@ export default function SlabCalculatorPage() {
 
       {/* CTA Section */}
       <section className="container mx-auto px-4 py-16 bg-muted/30">
-        <div className="max-w-4xl mx-auto text-center bg-card rounded-2xl shadow-xl p-12">
-          <Shield className="h-16 w-16 text-primary mx-auto mb-6" />
+        <div className="max-w-6xl mx-auto text-center bg-card rounded-2xl shadow-xl p-12">
+          <Building2 className="h-16 w-16 text-primary mx-auto mb-6" />
           <h2 className="text-3xl md:text-4xl font-bold text-card-foreground mb-6">
             Calculate Your Slab Concrete Today
           </h2>
@@ -302,7 +305,7 @@ export default function SlabCalculatorPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/calculator"
+              href="/"
               className="inline-flex items-center px-8 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
             >
               <Calculator className="mr-2 h-5 w-5" />

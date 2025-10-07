@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useCallback } from 'react';
-import { Calculator, RotateCcw, Download, Building, Home, Square, Columns, Car, BrickWall, Footprints } from 'lucide-react';
+import { Calculator, RotateCcw, Download } from 'lucide-react';
 
 // 项目类型枚举
 type ProjectType = 'slabs' | 'footings' | 'tube' | 'curb' | 'stairs';

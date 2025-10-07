@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Calculator, Mail, MapPin, Phone } from "lucide-react";
+import { Calculator, Mail } from "lucide-react";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -33,6 +33,14 @@ export function Footer() {
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
                   Home
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/slab-calculator"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Slab Calculator
                 </Link>
               </li>
               <li>

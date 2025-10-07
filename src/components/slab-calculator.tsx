@@ -1,46 +1,130 @@
 'use client'
 
 import React, { useState, useCallback } from 'react';
-import { Calculator, RotateCcw, Download, Square, Info, AlertCircle } from 'lucide-react';
+import { Calculator, RotateCcw, Download, Info } from 'lucide-react';
+
+// 项目类型枚举
+type ProjectType = 'slabs';
 
 // 单位类型
-type UnitType = 'metric' | 'imperial';
+type UnitType = 'feet' | 'inches' | 'yards' | 'meters' | 'centimeters';
 
 // 计算结果接口
-interface SlabCalculationResult {
-  volume: number; // 混凝土体积 (立方米)
-  volumeImperial: number; // 立方码
-  area: number; // 面积
+interface CalculationResult {
+  volumeCubicFeet: number; // 立方英尺
+  volumeCubicYards: number; // 立方码
+  volumeCubicMeters: number; // 立方米
+  weightLbs: number; // 重量（磅）
+  weightKg: number; // 重量（千克）
+  bags60lb: number; // 60磅袋数
+  bags80lb: number; // 80磅袋数
   cement: number; // 水泥重量(kg)
   cementBags: number; // 水泥袋数
   sand: number; // 砂子重量(kg)
   gravel: number; // 石子重量(kg)
   water: number; // 水重量(kg)
   totalCost: number; // 总成本
-  thicknessRecommendation: string; // 厚度建议
 }
 
-// 板块参数接口
-interface SlabParams {
+// 项目参数接口
+interface ProjectParams {
+  // Slabs, Square Footings, or Walls
   length: string;
+  lengthUnit: UnitType;
   width: string;
-  thickness: string;
+  widthUnit: UnitType;
+  height: string;
+  heightUnit: UnitType;
+  quantity: string;
+
+  // Hole, Column, or Round Footings
+  diameter?: string;
+  diameterUnit?: UnitType;
+  depth?: string;
+  depthUnit?: UnitType;
+
+  // Circular Slab or Tube
+  outerDiameter?: string;
+  outerDiameterUnit?: UnitType;
+  innerDiameter?: string;
+  innerDiameterUnit?: UnitType;
+
+  // Curb and Gutter Barrier
+  curbDepth?: string;
+  curbDepthUnit?: UnitType;
+  gutterWidth?: string;
+  gutterWidthUnit?: UnitType;
+  curbHeight?: string;
+  curbHeightUnit?: UnitType;
+  flagThickness?: string;
+  flagThicknessUnit?: UnitType;
+
+  // Stairs
+  run?: string;
+  runUnit?: UnitType;
+  rise?: string;
+  riseUnit?: UnitType;
+  stairWidth?: string;
+  stairWidthUnit?: UnitType;
+  platformDepth?: string;
+  platformDepthUnit?: UnitType;
+  numberOfSteps?: string;
 }
 
 /**
- * 专门的板块混凝土计算器组件
- * 针对板块计算进行优化，提供更精确的计算和建议
+ * 混凝土计算器组件
+ * 提供完整的混凝土体积、材料用量和成本计算功能
  */
-export default function SlabCalculator() {
-  const [unit, setUnit] = useState<UnitType>('metric');
-  const [params, setParams] = useState<SlabParams>({
-    length: '',
-    width: '',
-    thickness: ''
+export default function ConcreteCalculator() {
+  const [projectType, setProjectType] = useState<ProjectType>('slabs');
+  const [unit, setUnit] = useState<UnitType>('feet');
+  const [params, setParams] = useState<ProjectParams>({
+    // Slabs, Square Footings, or Walls defaults
+    length: '5',
+    lengthUnit: 'feet',
+    width: '2.5',
+    widthUnit: 'feet',
+    height: '5',
+    heightUnit: 'inches',
+    quantity: '1',
+
+    // Hole, Column, or Round Footings defaults
+    diameter: '2.5',
+    diameterUnit: 'feet',
+    depth: '6',
+    depthUnit: 'feet',
+
+    // Circular Slab or Tube defaults
+    outerDiameter: '5',
+    outerDiameterUnit: 'feet',
+    innerDiameter: '4',
+    innerDiameterUnit: 'feet',
+
+    // Curb and Gutter Barrier defaults
+    curbDepth: '4',
+    curbDepthUnit: 'inches',
+    gutterWidth: '10',
+    gutterWidthUnit: 'inches',
+    curbHeight: '4',
+    curbHeightUnit: 'inches',
+    flagThickness: '5',
+    flagThicknessUnit: 'inches',
+
+    // Stairs defaults
+    run: '4',
+    runUnit: 'inches',
+    rise: '6',
+    riseUnit: 'inches',
+    stairWidth: '50',
+    stairWidthUnit: 'inches',
+    platformDepth: '5',
+    platformDepthUnit: 'inches',
+    numberOfSteps: '5'
   });
   const [concreteGrade, setConcreteGrade] = useState<string>('C25');
-  const [unitPrice, setUnitPrice] = useState<string>('300'); // 每立方米价格
-  const [result, setResult] = useState<SlabCalculationResult | null>(null);
+  const [reserveVolume, setReserveVolume] = useState<string>('0'); // 预留体积百分比
+  const [unitPrice, setUnitPrice] = useState<string>('160'); // 单位价格
+  const [result, setResult] = useState<CalculationResult | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // 混凝土配比数据 (每立方米)
@@ -53,32 +137,100 @@ export default function SlabCalculator() {
     C40: { cement: 539, sand: 447, gravel: 1210, water: 175 }
   };
 
-  // 单位转换常数
-  const CUBIC_METERS_TO_CUBIC_YARDS = 1.30795;
-  const CEMENT_BAG_WEIGHT = 50; // kg per bag
-  const METERS_TO_FEET = 3.28084;
-  const CM_TO_INCHES = 0.393701;
+  // 项目类型配置
+  const projectTypes = {
+    slabs: { name: 'Slabs, Square Footings, or Walls', icon: '/tab-square-01.svg', description: 'Rectangular concrete structures' }
+  };
 
-  /**
-   * 获取厚度建议
-   * @param area 面积 (平方米)
-   * @param thickness 厚度 (米)
-   * @returns 厚度建议文本
-   */
-  const getThicknessRecommendation = (area: number, thickness: number): string => {
-    const thicknessCm = thickness * 100;
-    
-    if (thicknessCm < 10) {
-      return "Too thin - Consider at least 10cm (4 inches) for structural integrity";
-    } else if (thicknessCm >= 10 && thicknessCm <= 15) {
-      return "Good for residential floors and light-duty applications";
-    } else if (thicknessCm > 15 && thicknessCm <= 20) {
-      return "Suitable for garages, driveways, and heavy-duty applications";
-    } else if (thicknessCm > 20) {
-      return "Very thick - Consider if this thickness is necessary for your application";
+  // 单位转换常数
+  const CUBIC_METERS_TO_CUBIC_FEET = 35.3147;
+  const CUBIC_METERS_TO_CUBIC_YARDS = 1.30795;
+  const CUBIC_FEET_TO_CUBIC_YARDS = 0.037037;
+  const CEMENT_BAG_WEIGHT = 50; // kg per bag
+
+  // 预混凝土密度
+  const CONCRETE_DENSITY_KG_PER_M3 = 2130; // kg/m³
+  const CONCRETE_DENSITY_LBS_PER_FT3 = 133; // lbs/ft³
+
+  // 单位辅助函数
+  const getUnitInfo = (unit: UnitType) => {
+    switch (unit) {
+      case 'feet':
+        return { symbol: 'ft', isMetric: false, toMeters: 0.3048 };
+      case 'inches':
+        return { symbol: 'in', isMetric: false, toMeters: 0.0254 };
+      case 'yards':
+        return { symbol: 'yd', isMetric: false, toMeters: 0.9144 };
+      case 'meters':
+        return { symbol: 'm', isMetric: true, toMeters: 1 };
+      case 'centimeters':
+        return { symbol: 'cm', isMetric: true, toMeters: 0.01 };
+      default:
+        return { symbol: 'm', isMetric: true, toMeters: 1 };
     }
-    
-    return "Standard thickness for most slab applications";
+  };
+
+  const getVolumeUnit = (unit: UnitType) => {
+    const unitInfo = getUnitInfo(unit);
+    if (unitInfo.isMetric) {
+      return 'm³';
+    } else {
+      return 'yd³';
+    }
+  };
+
+  const getPriceUnit = () => {
+    // 根据主要输入字段的单位判断系统
+    let primaryUnit: UnitType;
+
+    switch (projectType) {
+      case 'slabs':
+        primaryUnit = params.lengthUnit;
+        break;
+      // case 'footings':
+      //   primaryUnit = params.diameterUnit || 'feet';
+      //   break;
+      // case 'tube':
+      //   primaryUnit = params.outerDiameterUnit || 'feet';
+      //   break;
+      // case 'stairs':
+      //   primaryUnit = params.runUnit || 'inches';
+      //   break;
+      default:
+        primaryUnit = params.lengthUnit;
+    }
+
+    const unitInfo = getUnitInfo(primaryUnit);
+    if (unitInfo.isMetric) {
+      return '$/m³';
+    } else {
+      return '$/yd³';
+    }
+  };
+
+  // 创建单位选择下拉菜单的辅助函数
+  const createUnitSelector = (value: UnitType, onChange: (unit: UnitType) => void, className: string = "") => (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value as UnitType)}
+      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground border-border ${className}`}
+    >
+      <option value="feet">feet</option>
+      <option value="inches">inches</option>
+      <option value="yards">yards</option>
+      <option value="meters">meters</option>
+      <option value="centimeters">centimeters</option>
+    </select>
+  );
+
+  // 根据项目类型获取对应的示意图路径
+  const getProjectTypeImage = (projectType: ProjectType): string => {
+    switch (projectType) {
+      case 'slabs':
+        return '/square-01.svg';
+      default:
+        return '/square-01.svg';
+    }
   };
 
   /**
@@ -87,75 +239,126 @@ export default function SlabCalculator() {
    */
   const validateInputs = (): boolean => {
     const newErrors: Record<string, string> = {};
-    
-    if (!params.length || parseFloat(params.length) <= 0) {
-      newErrors.length = 'Please enter a valid length';
+
+    // 根据项目类型验证不同参数
+    switch (projectType) {
+      case 'slabs':
+        if (!params.length || parseFloat(params.length) <= 0) {
+          newErrors.length = 'Please enter a valid length';
+        }
+        if (!params.width || parseFloat(params.width) <= 0) {
+          newErrors.width = 'Please enter a valid width';
+        }
+        if (!params.height || parseFloat(params.height) <= 0) {
+          newErrors.height = 'Please enter a valid height';
+        }
+        if (!params.quantity || parseInt(params.quantity) <= 0) {
+          newErrors.quantity = 'Please enter a valid quantity';
+        }
     }
-    if (!params.width || parseFloat(params.width) <= 0) {
-      newErrors.width = 'Please enter a valid width';
+
+    if (reserveVolume && (parseFloat(reserveVolume) < 0 || parseFloat(reserveVolume) > 100)) {
+      newErrors.reserveVolume = 'Reserve volume must be between 0 and 100';
     }
-    if (!params.thickness || parseFloat(params.thickness) <= 0) {
-      newErrors.thickness = 'Please enter a valid thickness';
-    }
+
     if (!unitPrice || parseFloat(unitPrice) <= 0) {
       newErrors.unitPrice = 'Please enter a valid unit price';
     }
-    
-    // 厚度合理性检查
-    if (params.thickness && parseFloat(params.thickness) > 0) {
-      const thickness = parseFloat(params.thickness);
-      const thicknessInCm = unit === 'metric' ? thickness * 100 : thickness * 2.54;
-      
-      if (thicknessInCm < 5) {
-        newErrors.thickness = 'Thickness too small - minimum 5cm (2 inches) recommended';
-      } else if (thicknessInCm > 50) {
-        newErrors.thickness = 'Thickness seems too large - please verify your input';
-      }
-    }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   /**
-   * 计算板块体积和相关参数
-   * @returns 计算结果
+   * 计算不同项目类型的体积
+   * @returns 计算得出的体积（立方米）
    */
-  const calculateSlabConcrete = () => {
+  const calculateVolume = (): number => {
+    const quantity = parseInt(params.quantity || '1');
+
+    switch (projectType) {
+      case 'slabs': {
+        // 矩形体积 = 长 × 宽 × 高 × 数量
+        const l = parseFloat(params.length || '0') * getUnitInfo(params.lengthUnit).toMeters;
+        const w = parseFloat(params.width || '0') * getUnitInfo(params.widthUnit).toMeters;
+        const h = parseFloat(params.height || '0') * getUnitInfo(params.heightUnit).toMeters;
+        return l * w * h * quantity;
+      }
+
+      default:
+        return 0;
+    }
+  };
+
+  /**
+   * 判断当前使用的单位系统
+   * @returns true 表示 metric，false 表示 imperial
+   */
+  const isMetricSystem = (): boolean => {
+    // 根据主要输入字段的单位判断系统
+    let primaryUnit: UnitType;
+
+    switch (projectType) {
+      case 'slabs':
+        primaryUnit = params.lengthUnit;
+        break;
+      default:
+        primaryUnit = params.lengthUnit;
+    }
+
+    const unitInfo = getUnitInfo(primaryUnit);
+    return unitInfo.isMetric;
+  };
+
+  /**
+   * 主计算函数
+   * 计算混凝土体积、材料用量和成本
+   */
+  const calculateConcrete = () => {
     if (!validateInputs()) {
       return;
     }
 
-    let length = parseFloat(params.length);
-    let width = parseFloat(params.width);
-    let thickness = parseFloat(params.thickness);
-
-    // 单位转换为米
-    if (unit === 'imperial') {
-      length = length / METERS_TO_FEET;
-      width = width / METERS_TO_FEET;
-      thickness = thickness / METERS_TO_FEET;
-    }
-
-    const area = length * width;
-    const volume = area * thickness;
+    const baseVolumeInMeters = calculateVolume();
     const ratio = concreteRatios[concreteGrade];
     const price = parseFloat(unitPrice);
+    const reservePercent = parseFloat(reserveVolume || '0');
+
+    // 应用预留体积百分比
+    const volumeInMeters = baseVolumeInMeters * (1 + reservePercent / 100);
 
     // 单位转换
-    const volumeImperial = volume * CUBIC_METERS_TO_CUBIC_YARDS;
+    const volumeInCubicFeet = volumeInMeters * CUBIC_METERS_TO_CUBIC_FEET;
+    const volumeInCubicYards = volumeInMeters * CUBIC_METERS_TO_CUBIC_YARDS;
 
-    const calculatedResult: SlabCalculationResult = {
-      volume: Math.round(volume * 100) / 100,
-      volumeImperial: Math.round(volumeImperial * 100) / 100,
-      area: Math.round(area * 100) / 100,
-      cement: Math.round(volume * ratio.cement * 100) / 100,
-      cementBags: Math.ceil(volume * ratio.cement / CEMENT_BAG_WEIGHT),
-      sand: Math.round(volume * ratio.sand * 100) / 100,
-      gravel: Math.round(volume * ratio.gravel * 100) / 100,
-      water: Math.round(volume * ratio.water * 100) / 100,
-      totalCost: Math.round(volume * price * 100) / 100,
-      thicknessRecommendation: getThicknessRecommendation(area, thickness)
+    // 计算重量（使用预混凝土密度）
+    const weightInKg = volumeInMeters * CONCRETE_DENSITY_KG_PER_M3;
+    const weightInLbs = volumeInCubicFeet * CONCRETE_DENSITY_LBS_PER_FT3;
+
+    // 计算袋数
+    const bags60lb = Math.ceil(weightInLbs / 60);
+    const bags80lb = Math.ceil(weightInLbs / 80);
+
+    // 计算总成本 - 根据单位系统使用相应的体积
+    const useMetric = isMetricSystem();
+    const totalCost = useMetric
+      ? Math.round(volumeInMeters * price * 100) / 100
+      : Math.round(volumeInCubicYards * price * 100) / 100;
+
+    const calculatedResult: CalculationResult = {
+      volumeCubicFeet: Math.round(volumeInCubicFeet * 100) / 100,
+      volumeCubicYards: Math.round(volumeInCubicYards * 100) / 100,
+      volumeCubicMeters: Math.round(volumeInMeters * 100) / 100,
+      weightLbs: Math.round(weightInLbs * 100) / 100,
+      weightKg: Math.round(weightInKg * 100) / 100,
+      bags60lb: bags60lb,
+      bags80lb: bags80lb,
+      cement: Math.round(volumeInMeters * ratio.cement * 100) / 100,
+      cementBags: Math.ceil(volumeInMeters * ratio.cement / CEMENT_BAG_WEIGHT),
+      sand: Math.round(volumeInMeters * ratio.sand * 100) / 100,
+      gravel: Math.round(volumeInMeters * ratio.gravel * 100) / 100,
+      water: Math.round(volumeInMeters * ratio.water * 100) / 100,
+      totalCost: totalCost
     };
 
     setResult(calculatedResult);
@@ -166,7 +369,7 @@ export default function SlabCalculator() {
    * @param key 参数键名
    * @param value 参数值
    */
-  const updateParam = (key: keyof SlabParams, value: string) => {
+  const updateParam = (key: keyof ProjectParams, value: string) => {
     setParams(prev => ({ ...prev, [key]: value }));
     // 清除对应的错误信息
     if (errors[key]) {
@@ -175,346 +378,836 @@ export default function SlabCalculator() {
   };
 
   /**
-   * 重置所有参数
+   * 重置表单
    */
-  const resetCalculator = () => {
-    setParams({ length: '', width: '', thickness: '' });
-    setUnitPrice('300');
+  const resetForm = () => {
+    setParams({
+      // Slabs, Square Footings, or Walls defaults
+      length: '5',
+      lengthUnit: 'feet',
+      width: '2.5',
+      widthUnit: 'feet',
+      height: '5',
+      heightUnit: 'inches',
+      quantity: '1',
+
+      // Hole, Column, or Round Footings defaults
+      diameter: '2.5',
+      diameterUnit: 'feet',
+      depth: '6',
+      depthUnit: 'feet',
+
+      // Circular Slab or Tube defaults
+      outerDiameter: '5',
+      outerDiameterUnit: 'feet',
+      innerDiameter: '4',
+      innerDiameterUnit: 'feet',
+
+      // Curb and Gutter Barrier defaults
+      curbDepth: '4',
+      curbDepthUnit: 'inches',
+      gutterWidth: '10',
+      gutterWidthUnit: 'inches',
+      curbHeight: '4',
+      curbHeightUnit: 'inches',
+      flagThickness: '5',
+      flagThicknessUnit: 'inches',
+
+      // Stairs defaults
+      run: '4',
+      runUnit: 'inches',
+      rise: '6',
+      riseUnit: 'inches',
+      stairWidth: '50',
+      stairWidthUnit: 'inches',
+      platformDepth: '5',
+      platformDepthUnit: 'inches',
+      numberOfSteps: '5'
+    });
     setConcreteGrade('C25');
+    setReserveVolume('0');
+    setUnitPrice('160');
     setResult(null);
     setErrors({});
   };
 
   /**
-   * 导出计算结果
+   * 导出结果
    */
-  const exportResults = () => {
+  const exportResult = () => {
     if (!result) return;
-    
-    const exportData = {
-      slabDimensions: {
-        length: `${params.length} ${unit === 'metric' ? 'm' : 'ft'}`,
-        width: `${params.width} ${unit === 'metric' ? 'm' : 'ft'}`,
-        thickness: `${params.thickness} ${unit === 'metric' ? 'm' : 'ft'}`,
-        area: `${result.area} m²`
-      },
-      concreteVolume: {
-        metric: `${result.volume} m³`,
-        imperial: `${result.volumeImperial} yd³`
-      },
-      materials: {
-        cement: `${result.cement} kg (${result.cementBags} bags)`,
-        sand: `${result.sand} kg`,
-        gravel: `${result.gravel} kg`,
-        water: `${result.water} kg`
-      },
-      cost: `$${result.totalCost}`,
-      recommendation: result.thicknessRecommendation,
-      concreteGrade: concreteGrade
-    };
 
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'slab-concrete-calculation.json';
-    link.click();
+    const projectTypeName = projectTypes[projectType].name;
+
+    let dimensionsText = '';
+    switch (projectType) {
+      case 'slabs':
+        dimensionsText = `Length: ${params.length}${getUnitInfo(params.lengthUnit).symbol}, Width: ${params.width}${getUnitInfo(params.widthUnit).symbol}, Height: ${params.height}${getUnitInfo(params.heightUnit).symbol}, Quantity: ${params.quantity}`;
+        break;
+    }
+
+    const data = `Concrete Calculator Results\n\n` +
+      `Project Type: ${projectTypeName}\n` +
+      `Dimensions: ${dimensionsText}\n` +
+      `Concrete Grade: ${concreteGrade}\n` +
+      `Reserve Volume: ${reserveVolume}%\n\n` +
+      `Concrete Volume (including reserve):\n` +
+      `  ${result.volumeCubicFeet} cubic feet (ft³)\n` +
+      `  ${result.volumeCubicYards} cubic yards (yd³)\n` +
+      `  ${result.volumeCubicMeters} cubic meters (m³)\n\n` +
+      `Weight Needed (pre-mixed concrete with density of 2,130 kg/m³ or 133 lbs/ft³):\n` +
+      `  ${result.weightLbs} lbs\n` +
+      `  ${result.weightKg} kg\n` +
+      `  Using 60-lb bags: ${result.bags60lb} bags\n` +
+      `  Using 80-lb bags: ${result.bags80lb} bags\n\n` +
+      `Required Materials:\n` +
+      `Cement: ${result.cement} kg (${result.cementBags} bags)\n` +
+      `Sand: ${result.sand} kg\n` +
+      `Gravel: ${result.gravel} kg\n` +
+      `Water: ${result.water} kg\n\n` +
+      `Total Cost: $${result.totalCost}`;
+
+    const blob = new Blob([data], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'concrete-calculator-results.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="bg-card rounded-2xl shadow-xl p-8">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-lg">
-            <Square className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-card-foreground">Slab Calculator</h2>
-            <p className="text-muted-foreground">Calculate concrete for rectangular slabs</p>
-          </div>
+    <div className="bg-card rounded-xl shadow-lg p-6">
+      <h2 className="text-2xl font-semibold text-card-foreground mb-6 flex items-center">
+        <Calculator className="mr-2 h-6 w-6" />
+        Concrete Slab Calculator
+      </h2>
+      
+      {/* Project Type Selection */}
+      <div className="mb-6">
+        <h3 className="text-lg font-medium text-card-foreground mb-3">
+          Project Type
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {Object.entries(projectTypes).map(([key, config]) => {
+            return (
+              <button
+                key={key}
+                onClick={() => setProjectType(key as ProjectType)}
+                className={`p-3 rounded-lg border-2 transition-all duration-200 flex flex-col items-center space-y-1 text-sm cursor-pointer ${
+                  projectType === key
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border hover:border-border/80 text-muted-foreground'
+                }`}
+              >
+                <img 
+                  src={config.icon} 
+                  alt={config.name}
+                  className="h-22 w-22 object-contain" 
+                />
+                <span className="text-lg font-bold">{config.name}</span>
+              </button>
+            );
+          })}
         </div>
-        <button
-          onClick={resetCalculator}
-          className="flex items-center space-x-2 px-4 py-2 text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <RotateCcw className="h-4 w-4" />
-          <span>Reset</span>
-        </button>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Input Section */}
-        <div className="space-y-6">
-          {/* Unit Selection */}
-          <div>
-            <label className="block text-sm font-medium text-card-foreground mb-3">
-              Measurement Units
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setUnit('metric')}
-                className={`p-3 rounded-lg border-2 transition-all ${
-                  unit === 'metric'
-                    ? 'border-primary bg-primary/5 text-primary'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <div className="text-sm font-medium">Metric</div>
-                <div className="text-xs text-muted-foreground">meters (m)</div>
-              </button>
-              <button
-                onClick={() => setUnit('imperial')}
-                className={`p-3 rounded-lg border-2 transition-all ${
-                  unit === 'imperial'
-                    ? 'border-primary bg-primary/5 text-primary'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <div className="text-sm font-medium">Imperial</div>
-                <div className="text-xs text-muted-foreground">feet (ft)</div>
-              </button>
-            </div>
-          </div>
 
-          {/* Slab Dimensions */}
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-card-foreground mb-2">
-                Length ({unit === 'metric' ? 'm' : 'ft'})
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={params.length}
-                onChange={(e) => updateParam('length', e.target.value)}
-                className={`w-full px-4 py-3 rounded-lg border-2 bg-background transition-colors ${
-                  errors.length ? 'border-red-500' : 'border-border focus:border-primary'
-                }`}
-                placeholder={`Enter slab length in ${unit === 'metric' ? 'meters' : 'feet'}`}
-              />
-              {errors.length && (
-                <p className="mt-1 text-sm text-red-500 flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.length}
-                </p>
-              )}
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-card-foreground mb-2">
-                Width ({unit === 'metric' ? 'm' : 'ft'})
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={params.width}
-                onChange={(e) => updateParam('width', e.target.value)}
-                className={`w-full px-4 py-3 rounded-lg border-2 bg-background transition-colors ${
-                  errors.width ? 'border-red-500' : 'border-border focus:border-primary'
-                }`}
-                placeholder={`Enter slab width in ${unit === 'metric' ? 'meters' : 'feet'}`}
-              />
-              {errors.width && (
-                <p className="mt-1 text-sm text-red-500 flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.width}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-card-foreground mb-2">
-                Thickness ({unit === 'metric' ? 'm' : 'ft'})
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={params.thickness}
-                onChange={(e) => updateParam('thickness', e.target.value)}
-                className={`w-full px-4 py-3 rounded-lg border-2 bg-background transition-colors ${
-                  errors.thickness ? 'border-red-500' : 'border-border focus:border-primary'
-                }`}
-                placeholder={`Enter slab thickness in ${unit === 'metric' ? 'meters' : 'feet'}`}
-              />
-              {errors.thickness && (
-                <p className="mt-1 text-sm text-red-500 flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-1" />
-                  {errors.thickness}
-                </p>
-              )}
-              <div className="mt-2 p-3 rounded-lg border border-border">
-                <div className="flex items-start space-x-2">
-                  <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm dark:text-blue-500">
-                    <div className="font-medium mb-1">Thickness Guidelines:</div>
-                    <div>• Residential floors: 10-15cm (4-6 inches)</div>
-                    <div>• Garages/driveways: 15-20cm (6-8 inches)</div>
-                    <div>• Basement slabs: 10-15cm (4-6 inches)</div>
+      {/* Input Fields */}
+      <div className="mb-6">
+        <h3 className="text-lg font-medium text-card-foreground mb-3">
+          Dimensions
+        </h3>
+        
+        {/* Flex container for input fields and diagram */}
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Input fields section - left half */}
+          <div className="flex-1">
+            {/* Dynamic input fields based on project type */}
+            {projectType === 'slabs' ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Length (L)
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={params.length}
+                      onChange={(e) => updateParam('length', e.target.value)}
+                      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                        errors.length ? 'border-destructive' : 'border-border'
+                      }`}
+                      placeholder="5"
+                      step="0.01"
+                      min="0"
+                    />
+                    {createUnitSelector(params.lengthUnit, (unit) => updateParam('lengthUnit', unit), "w-24")}
+                  </div>
+                  {errors.length && <p className="text-destructive text-sm mt-1">{errors.length}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Width (W)
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={params.width}
+                      onChange={(e) => updateParam('width', e.target.value)}
+                      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                        errors.width ? 'border-destructive' : 'border-border'
+                      }`}
+                      placeholder="2.5"
+                      step="0.01"
+                      min="0"
+                    />
+                    {createUnitSelector(params.widthUnit, (unit) => updateParam('widthUnit', unit), "w-24")}
+                  </div>
+                  {errors.width && <p className="text-destructive text-sm mt-1">{errors.width}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Thickness or Height (H)
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={params.height}
+                      onChange={(e) => updateParam('height', e.target.value)}
+                      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                        errors.height ? 'border-destructive' : 'border-border'
+                      }`}
+                      placeholder="5"
+                      step="0.01"
+                      min="0"
+                    />
+                    {createUnitSelector(params.heightUnit, (unit) => updateParam('heightUnit', unit), "w-24")}
+                  </div>
+                  {errors.height && <p className="text-destructive text-sm mt-1">{errors.height}</p>}
+                  <div className="mt-2 p-3 rounded-lg border border-border">
+                    <div className="flex items-start space-x-2">
+                      <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm dark:text-blue-500">
+                        <div className="font-medium mb-1">Thickness Guidelines:</div>
+                        <div>• Residential floors: 10-15cm (4-6 inches)</div>
+                        <div>• Garages/driveways: 15-20cm (6-8 inches)</div>
+                        <div>• Basement slabs: 10-15cm (4-6 inches)</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Quantity
+                  </label>
+                  <input
+                    type="number"
+                    value={params.quantity}
+                    onChange={(e) => updateParam('quantity', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                      errors.quantity ? 'border-destructive' : 'border-border'
+                    }`}
+                    placeholder="1"
+                    min="1"
+                  />
+                  {errors.quantity && <p className="text-destructive text-sm mt-1">{errors.quantity}</p>}
+                </div>
               </div>
+            ) : projectType === 'footings' ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Diameter (D)
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={params.diameter}
+                      onChange={(e) => updateParam('diameter', e.target.value)}
+                      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                        errors.diameter ? 'border-destructive' : 'border-border'
+                      }`}
+                      placeholder="2.5"
+                      step="0.01"
+                      min="0"
+                    />
+                    {createUnitSelector(params.diameterUnit || 'feet', (unit) => updateParam('diameterUnit', unit), "w-24")}
+                  </div>
+                  {errors.diameter && <p className="text-destructive text-sm mt-1">{errors.diameter}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Depth or Height (H)
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={params.depth}
+                      onChange={(e) => updateParam('depth', e.target.value)}
+                      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                        errors.depth ? 'border-destructive' : 'border-border'
+                      }`}
+                      placeholder="6"
+                      step="0.01"
+                      min="0"
+                    />
+                    {createUnitSelector(params.depthUnit || 'feet', (unit) => updateParam('depthUnit', unit), "w-24")}
+                  </div>
+                  {errors.depth && <p className="text-destructive text-sm mt-1">{errors.depth}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Quantity
+                  </label>
+                  <input
+                    type="number"
+                    value={params.quantity}
+                    onChange={(e) => updateParam('quantity', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                      errors.quantity ? 'border-destructive' : 'border-border'
+                    }`}
+                    placeholder="1"
+                    min="1"
+                  />
+                  {errors.quantity && <p className="text-destructive text-sm mt-1">{errors.quantity}</p>}
+                </div>
+              </div>
+            ) : projectType === 'tube' ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Outer Diameter (D1)
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={params.outerDiameter}
+                      onChange={(e) => updateParam('outerDiameter', e.target.value)}
+                      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                        errors.outerDiameter ? 'border-destructive' : 'border-border'
+                      }`}
+                      placeholder="5"
+                      step="0.01"
+                      min="0"
+                    />
+                    {createUnitSelector(params.outerDiameterUnit || 'feet', (unit) => updateParam('outerDiameterUnit', unit), "w-24")}
+                  </div>
+                  {errors.outerDiameter && <p className="text-destructive text-sm mt-1">{errors.outerDiameter}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Inner Diameter (D2)
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={params.innerDiameter}
+                      onChange={(e) => updateParam('innerDiameter', e.target.value)}
+                      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                        errors.innerDiameter ? 'border-destructive' : 'border-border'
+                      }`}
+                      placeholder="4"
+                      step="0.01"
+                      min="0"
+                    />
+                    {createUnitSelector(params.innerDiameterUnit || 'feet', (unit) => updateParam('innerDiameterUnit', unit), "w-24")}
+                  </div>
+                  {errors.innerDiameter && <p className="text-destructive text-sm mt-1">{errors.innerDiameter}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Length or Height (H)
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={params.height}
+                      onChange={(e) => updateParam('height', e.target.value)}
+                      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                        errors.height ? 'border-destructive' : 'border-border'
+                      }`}
+                      placeholder="6"
+                      step="0.01"
+                      min="0"
+                    />
+                    {createUnitSelector(params.heightUnit, (unit) => updateParam('heightUnit', unit), "w-24")}
+                  </div>
+                  {errors.height && <p className="text-destructive text-sm mt-1">{errors.height}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Quantity
+                  </label>
+                  <input
+                    type="number"
+                    value={params.quantity}
+                    onChange={(e) => updateParam('quantity', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                      errors.quantity ? 'border-destructive' : 'border-border'
+                    }`}
+                    placeholder="1"
+                    min="1"
+                  />
+                  {errors.quantity && <p className="text-destructive text-sm mt-1">{errors.quantity}</p>}
+                </div>
+              </div>
+            ) : projectType === 'curb' ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Curb Depth
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={params.curbDepth}
+                      onChange={(e) => updateParam('curbDepth', e.target.value)}
+                      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                        errors.curbDepth ? 'border-destructive' : 'border-border'
+                      }`}
+                      placeholder="4"
+                      step="0.01"
+                      min="0"
+                    />
+                    {createUnitSelector(params.curbDepthUnit || 'inches', (unit) => updateParam('curbDepthUnit', unit), "w-24")}
+                  </div>
+                  {errors.curbDepth && <p className="text-destructive text-sm mt-1">{errors.curbDepth}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Gutter Width
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={params.gutterWidth}
+                      onChange={(e) => updateParam('gutterWidth', e.target.value)}
+                      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                        errors.gutterWidth ? 'border-destructive' : 'border-border'
+                      }`}
+                      placeholder="10"
+                      step="0.01"
+                      min="0"
+                    />
+                    {createUnitSelector(params.gutterWidthUnit || 'inches', (unit) => updateParam('gutterWidthUnit', unit), "w-24")}
+                  </div>
+                  {errors.gutterWidth && <p className="text-destructive text-sm mt-1">{errors.gutterWidth}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Curb Height
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={params.curbHeight}
+                      onChange={(e) => updateParam('curbHeight', e.target.value)}
+                      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                        errors.curbHeight ? 'border-destructive' : 'border-border'
+                      }`}
+                      placeholder="4"
+                      step="0.01"
+                      min="0"
+                    />
+                    {createUnitSelector(params.curbHeightUnit || 'inches', (unit) => updateParam('curbHeightUnit', unit), "w-24")}
+                  </div>
+                  {errors.curbHeight && <p className="text-destructive text-sm mt-1">{errors.curbHeight}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Flag Thickness
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={params.flagThickness}
+                      onChange={(e) => updateParam('flagThickness', e.target.value)}
+                      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                        errors.flagThickness ? 'border-destructive' : 'border-border'
+                      }`}
+                      placeholder="5"
+                      step="0.01"
+                      min="0"
+                    />
+                    {createUnitSelector(params.flagThicknessUnit || 'inches', (unit) => updateParam('flagThicknessUnit', unit), "w-24")}
+                  </div>
+                  {errors.flagThickness && <p className="text-destructive text-sm mt-1">{errors.flagThickness}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Length
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={params.length}
+                      onChange={(e) => updateParam('length', e.target.value)}
+                      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                        errors.length ? 'border-destructive' : 'border-border'
+                      }`}
+                      placeholder="10"
+                      step="0.01"
+                      min="0"
+                    />
+                    {createUnitSelector(params.lengthUnit, (unit) => updateParam('lengthUnit', unit), "w-24")}
+                  </div>
+                  {errors.length && <p className="text-destructive text-sm mt-1">{errors.length}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Quantity
+                  </label>
+                  <input
+                    type="number"
+                    value={params.quantity}
+                    onChange={(e) => updateParam('quantity', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                      errors.quantity ? 'border-destructive' : 'border-border'
+                    }`}
+                    placeholder="1"
+                    min="1"
+                  />
+                  {errors.quantity && <p className="text-destructive text-sm mt-1">{errors.quantity}</p>}
+                </div>
+              </div>
+            ) : projectType === 'stairs' ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Run
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={params.run}
+                      onChange={(e) => updateParam('run', e.target.value)}
+                      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                        errors.run ? 'border-destructive' : 'border-border'
+                      }`}
+                      placeholder="4"
+                      step="0.01"
+                      min="0"
+                    />
+                    {createUnitSelector(params.runUnit || 'inches', (unit) => updateParam('runUnit', unit), "w-24")}
+                  </div>
+                  {errors.run && <p className="text-destructive text-sm mt-1">{errors.run}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Rise
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={params.rise}
+                      onChange={(e) => updateParam('rise', e.target.value)}
+                      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                        errors.rise ? 'border-destructive' : 'border-border'
+                      }`}
+                      placeholder="6"
+                      step="0.01"
+                      min="0"
+                    />
+                    {createUnitSelector(params.riseUnit || 'inches', (unit) => updateParam('riseUnit', unit), "w-24")}
+                  </div>
+                  {errors.rise && <p className="text-destructive text-sm mt-1">{errors.rise}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Width
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={params.stairWidth}
+                      onChange={(e) => updateParam('stairWidth', e.target.value)}
+                      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                        errors.stairWidth ? 'border-destructive' : 'border-border'
+                      }`}
+                      placeholder="50"
+                      step="0.01"
+                      min="0"
+                    />
+                    {createUnitSelector(params.stairWidthUnit || 'inches', (unit) => updateParam('stairWidthUnit', unit), "w-24")}
+                  </div>
+                  {errors.stairWidth && <p className="text-destructive text-sm mt-1">{errors.stairWidth}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Platform Depth
+                  </label>
+                  <div className="flex gap-1">
+                    <input
+                      type="number"
+                      value={params.platformDepth}
+                      onChange={(e) => updateParam('platformDepth', e.target.value)}
+                      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                        errors.platformDepth ? 'border-destructive' : 'border-border'
+                      }`}
+                      placeholder="5"
+                      step="0.01"
+                      min="0"
+                    />
+                    {createUnitSelector(params.platformDepthUnit || 'inches', (unit) => updateParam('platformDepthUnit', unit), "w-24")}
+                  </div>
+                  {errors.platformDepth && <p className="text-destructive text-sm mt-1">{errors.platformDepth}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
+                    Number of Steps
+                  </label>
+                  <input
+                    type="number"
+                    value={params.numberOfSteps}
+                    onChange={(e) => updateParam('numberOfSteps', e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                      errors.numberOfSteps ? 'border-destructive' : 'border-border'
+                    }`}
+                    placeholder="5"
+                    min="1"
+                  />
+                  {errors.numberOfSteps && <p className="text-destructive text-sm mt-1">{errors.numberOfSteps}</p>}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          {/* Diagram section - right half */}
+          <div className="flex-1 flex items-center justify-center">
+            <div className="w-full">
+              <img
+                src={getProjectTypeImage(projectType)}
+                alt={`${projectTypes[projectType].name} diagram`}
+                className="w-full h-auto object-contain rounded-lg border border-border bg-muted/20 dark:bg-white/20 p-4"
+              />
+              <p className="text-center text-sm text-muted-foreground mt-2">
+                {projectTypes[projectType].name} Shape
+              </p>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Concrete Grade */}
+      {/* Concrete Grade and Unit Price */}
+      <div className="flex flex-col lg:flex-row gap-6 mb-6">
+        {/* Options section - left half */}
+        <div className="flex-1 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-card-foreground mb-2">
-              Concrete Grade
-            </label>
-            <select
-              value={concreteGrade}
-              onChange={(e) => setConcreteGrade(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border-2 border-border focus:border-primary bg-background"
-            >
-              <option value="C15">C15 (15 MPa) - Light duty</option>
-              <option value="C20">C20 (20 MPa) - General purpose</option>
-              <option value="C25">C25 (25 MPa) - Residential slabs</option>
-              <option value="C30">C30 (30 MPa) - Heavy duty</option>
-              <option value="C35">C35 (35 MPa) - Commercial</option>
-              <option value="C40">C40 (40 MPa) - High strength</option>
-            </select>
-          </div>
-
-          {/* Unit Price */}
-          <div>
-            <label className="block text-sm font-medium text-card-foreground mb-2">
-              Price per Cubic Meter ($)
+            <label className="block text-sm font-medium text-muted-foreground mb-2">
+              Reserve Volume (%)
             </label>
             <input
               type="number"
-              step="0.01"
+              value={reserveVolume}
+              onChange={(e) => setReserveVolume(e.target.value)}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                errors.reserveVolume ? 'border-destructive' : 'border-border'
+              }`}
+              placeholder="0"
+              step="1"
               min="0"
+              max="100"
+            />
+            {errors.reserveVolume && <p className="text-destructive text-sm mt-1">{errors.reserveVolume}</p>}
+            <p className="text-xs text-muted-foreground mt-1">
+              Add extra volume for waste, spills, and measurement variations
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-2">
+              Unit Price ({getPriceUnit()})
+            </label>
+            <input
+              type="number"
               value={unitPrice}
               onChange={(e) => setUnitPrice(e.target.value)}
-              className={`w-full px-4 py-3 rounded-lg border-2 bg-background transition-colors ${
-                errors.unitPrice ? 'border-red-500' : 'border-border focus:border-primary'
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
+                errors.unitPrice ? 'border-destructive' : 'border-border'
               }`}
-              placeholder="Enter price per cubic meter"
+              placeholder="0.00"
+              step="0.01"
+              min="0"
             />
-            {errors.unitPrice && (
-              <p className="mt-1 text-sm text-red-500 flex items-center">
-                <AlertCircle className="h-4 w-4 mr-1" />
-                {errors.unitPrice}
-              </p>
-            )}
+            {errors.unitPrice && <p className="text-destructive text-sm mt-1">{errors.unitPrice}</p>}
           </div>
-
-          {/* Calculate Button */}
-          <button
-            onClick={calculateSlabConcrete}
-            className="w-full flex items-center justify-center space-x-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-4 px-6 rounded-lg transition-colors shadow-lg hover:shadow-xl"
-          >
-            <Calculator className="h-5 w-5" />
-            <span>Calculate Slab Concrete</span>
-          </button>
         </div>
 
-        {/* Results Section */}
-        <div className="space-y-6">
-          {result ? (
-            <>
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-card-foreground">Calculation Results</h3>
-                <button
-                  onClick={exportResults}
-                  className="flex items-center space-x-2 px-3 py-2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Download className="h-4 w-4" />
-                  <span>Export</span>
-                </button>
-              </div>
-
-              {/* Thickness Recommendation */}
-              <div className="p-4 rounded-lg border border-border">
-                <div className="flex items-start space-x-2">
-                  <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-medium text-blue-500 mb-1">
-                      Thickness Assessment
-                    </div>
-                    <div className="text-sm text-blue-500">
-                      {result.thicknessRecommendation}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Volume Results */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-primary/5 p-4 rounded-lg">
-                  <div className="text-2xl font-bold text-primary">{result.volume}</div>
-                  <div className="text-sm text-muted-foreground">Cubic Meters (m³)</div>
-                </div>
-                <div className="bg-primary/5 p-4 rounded-lg">
-                  <div className="text-2xl font-bold text-primary">{result.volumeImperial}</div>
-                  <div className="text-sm text-muted-foreground">Cubic Yards (yd³)</div>
-                </div>
-              </div>
-
-              {/* Area */}
-              <div className="dark:bg-green-900/5 p-4 rounded-lg">
-                <div className="text-lg font-semibold text-green-500">
-                  Slab Area: {result.area} m²
-                </div>
-                <div className="text-sm text-green-500">
-                  ({Math.round(result.area * 10.764 * 100) / 100} sq ft)
-                </div>
-              </div>
-
-              {/* Material Breakdown */}
-              <div className="space-y-3">
-                <h4 className="font-semibold text-card-foreground">Material Requirements</h4>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="flex justify-between p-3 bg-muted/50 rounded">
-                    <span>Cement:</span>
-                    <span className="font-medium">{result.cement} kg</span>
-                  </div>
-                  <div className="flex justify-between p-3 bg-muted/50 rounded">
-                    <span>Cement Bags:</span>
-                    <span className="font-medium">{result.cementBags} bags</span>
-                  </div>
-                  <div className="flex justify-between p-3 bg-muted/50 rounded">
-                    <span>Sand:</span>
-                    <span className="font-medium">{result.sand} kg</span>
-                  </div>
-                  <div className="flex justify-between p-3 bg-muted/50 rounded">
-                    <span>Gravel:</span>
-                    <span className="font-medium">{result.gravel} kg</span>
-                  </div>
-                  <div className="flex justify-between p-3 bg-muted/50 rounded">
-                    <span>Water:</span>
-                    <span className="font-medium">{result.water} kg</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Cost Estimate */}
-              <div className="dark:bg-green-900/5 p-4 rounded-lg">
-                <div className="text-xl font-bold text-green-500">
-                  Total Cost: ${result.totalCost}
-                </div>
-                <div className="text-sm text-green-500">
-                  Based on ${unitPrice}/m³ ({concreteGrade} grade)
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-64 text-center">
-              <Square className="h-16 w-16 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                Ready to Calculate
-              </h3>
-              <p className="text-muted-foreground">
-                Enter your slab dimensions and click calculate to get detailed results
-              </p>
+        {/* Information section - right half */}
+        <div className="flex-1 bg-muted/20 rounded-lg p-4 border border-border">
+          <h4 className="text-sm font-medium text-foreground mb-3">Concrete Strength & Pricing Guide</h4>
+          <div className="text-sm text-muted-foreground space-y-2">
+            <p>
+              Concrete prices vary based on strength requirements. Different PSI ratings (3000, 4000, 5000+) come with different costs to reflect material composition and performance characteristics.
+            </p>
+            <div className="mt-3">
+              <p className="font-medium text-foreground mb-2">Pricing Factors:</p>
+              <ul className="space-y-1">
+                <li>• Concrete strength and mix specifications</li>
+                <li>• Delivery distance and transportation fees</li>
+                <li>• Minimum order quantities and service charges</li>
+              </ul>
             </div>
-          )}
+            <p className="mt-3">
+              For current pricing in your area, contact local suppliers or visit{" "}
+              <a
+                href="https://americanconcrete.org/pricing/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                American Concrete Institute
+              </a>
+              .
+            </p>
+          </div>
         </div>
       </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-3 mb-6">
+        <button
+          onClick={calculateConcrete}
+          className="flex-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-[0.7rem] px-4 rounded-lg transition-colors duration-200 flex items-center justify-center cursor-pointer"
+        >
+          <Calculator className="mr-2 h-4 w-4" />
+          Calculate
+        </button>
+        <button
+          onClick={resetForm}
+          className="bg-secondary hover:bg-secondary/80 text-secondary-foreground font-semibold py-[0.7rem] px-4 rounded-lg transition-colors duration-200 flex items-center justify-center cursor-pointer"
+        >
+          <RotateCcw className="mr-2 h-4 w-4" />
+          Reset
+        </button>
+      </div>
+
+      {/* Results Display */}
+      {result ? (
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-card-foreground">
+            Calculation Results
+          </h3>
+          
+          {/* Volume Summary */}
+          <div className="bg-primary/10 p-4 rounded-lg">
+            <div className="text-sm text-primary font-medium mb-3">Concrete Volume</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <div className="text-xs text-muted-foreground">Cubic Feet</div>
+                <div className="text-lg font-bold text-primary">
+                  {result.volumeCubicFeet} ft³
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Cubic Yards</div>
+                <div className="text-lg font-bold text-primary">
+                  {result.volumeCubicYards} yd³
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Cubic Meters</div>
+                <div className="text-lg font-bold text-primary">
+                  {result.volumeCubicMeters} m³
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Weight Summary */}
+          <div className="bg-primary/10 p-4 rounded-lg border border-border">
+            <div className="text-sm font-medium text-primary mb-2">
+              Weight Needed
+            </div>
+            <div className="text-xs text-muted-foreground mb-3">
+              Pre-mixed concrete with density of 2,130 kg/m³ or 133 lbs/ft³
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <div className="text-xs text-muted-foreground">Weight (lbs)</div>
+                <div className="text-lg font-bold text-primary">
+                  {result.weightLbs.toLocaleString()} lbs
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Weight (kg)</div>
+                <div className="text-lg font-bold text-primary">
+                  {result.weightKg.toLocaleString()} kg
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Using 60-lb bags</div>
+                <div className="text-lg font-bold text-primary">
+                  {result.bags60lb} bags
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Using 80-lb bags</div>
+                <div className="text-lg font-bold text-primary">
+                  {result.bags80lb} bags
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Cost Summary */}
+          <div className="bg-primary/10 p-3 rounded-lg">
+            <div className="text-sm text-primary font-medium">Total Cost</div>
+            <div className="text-xl font-bold text-primary">
+              ${result.totalCost}
+            </div>
+          </div>
+          
+          {/* Material Quantities */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-primary/10 p-3 rounded-lg">
+              <div className="text-sm text-primary font-medium">Cement</div>
+              <div className="text-lg font-bold text-primary">
+                {result.cement} kg
+              </div>
+              <div className="text-xs text-muted-foreground">
+                ({result.cementBags} bags)
+              </div>
+            </div>
+            <div className="bg-primary/10 p-3 rounded-lg">
+              <div className="text-sm text-primary font-medium">Sand</div>
+              <div className="text-lg font-bold text-primary">
+                {result.sand} kg
+              </div>
+            </div>
+            <div className="bg-primary/10 p-3 rounded-lg">
+              <div className="text-sm text-primary font-medium">Gravel</div>
+              <div className="text-lg font-bold text-primary">
+                {result.gravel} kg
+              </div>
+            </div>
+            <div className="bg-primary/10 p-3 rounded-lg">
+              <div className="text-sm text-primary font-medium">Water</div>
+              <div className="text-lg font-bold text-primary">
+                {result.water} kg
+              </div>
+            </div>
+          </div>
+          
+          <button
+            onClick={exportResult}
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export Results
+          </button>
+        </div>
+      ) : (
+        <div className="text-center py-8">
+          <Calculator className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">
+            Enter project parameters and click Calculate
+          </p>
+        </div>
+      )}
     </div>
   );
 }

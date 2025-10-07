@@ -19,10 +19,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Concrete Calculator - Professional Concrete Volume Calculation Tool",
+    default: "Free Concrete Calculator | Estimate Volume, Mix & Cost Online",
     template: "%s | Concrete Calculator"
   },
-  description: "Free online concrete calculator to help you accurately calculate concrete volume required for various construction projects. Supports different strength grades, mix ratio calculations, and provides professional construction advice.",
+  description: "Use our free Concrete Calculator to estimate concrete volume, mix ratios, and project cost in seconds. Ideal for slabs, driveways, and foundations.",
   keywords: ["concrete calculator", "concrete volume calculation", "construction engineering", "construction calculation", "cement calculation", "building materials", "concrete mix ratio", "construction tools"],
   authors: [{ name: "Concrete Calculator Team", url: "https://concretecalculator.me" }],
   creator: "Concrete Calculator",

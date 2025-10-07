@@ -27,10 +27,10 @@ export default function Home() {
       <section className="container mx-auto px-4 py-16 text-center">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6">
-            Calculate Volume, Bags, and Cost Online
+            Calculate Concrete for Any Project in Seconds
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-8">
-            Professional concrete volume calculation tool for accurate material estimation in various construction projects
+            Looking for an easy way to figure out how much concrete you need? Our free Concrete Calculator helps you quickly estimate concrete volume, mix proportions, and cost for projects of any size. Whether you’re a contractor, homeowner, or DIY enthusiast, you’ll save time, reduce waste, and get accurate results with just a few clicks.
           </p>
         </div>
       </section>

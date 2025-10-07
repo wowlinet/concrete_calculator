@@ -4,6 +4,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Navigation } from "@/components/navigation";
 import { Breadcrumb } from "@/components/breadcrumb";
+import { Footer } from "@/components/footer";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -141,15 +143,11 @@ export default function RootLayout({
             <Navigation />
             <Breadcrumb />
             <main className="flex-1">{children}</main>
-            <footer className="border-t border-border py-6 md:py-0">
-              <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
-                <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-                  © 2024 Concrete Calculator. All rights reserved.
-                </p>
-              </div>
-            </footer>
+            <Footer />
           </div>
         </ThemeProvider>
+        {/* Google Analytics - Replace 'G-XXXXXXXXXX' with your actual GA4 Measurement ID */}
+        <GoogleAnalytics gaId="G-XXXXXXXXXX" />
       </body>
     </html>
   );

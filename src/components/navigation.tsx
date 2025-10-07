@@ -15,7 +15,7 @@ export function Navigation() {
   const pathname = usePathname()
 
   return (
-    <nav className="bg-background border-b border-border">
+    <nav className="sticky top-0 z-50 bg-background border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
@@ -33,9 +33,9 @@ export function Navigation() {
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors ${
+                    className={`inline-flex items-center px-1 pt-1 text-sm font-medium transition-colors ${
                       isActive
-                        ? 'border-primary text-primary'
+                        ? 'border-primary text-primary font-medium'
                         : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                     }`}
                   >

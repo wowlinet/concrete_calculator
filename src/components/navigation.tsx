@@ -6,9 +6,7 @@ import { Calculator, Home, Info } from 'lucide-react'
 import { ThemeToggle } from './theme-toggle'
 
 const navigation = [
-  { name: 'Home', href: '/', icon: Home },
-  { name: 'Concrete Calculator', href: '/calculator', icon: Calculator },
-  { name: 'About', href: '/about', icon: Info },
+  { name: 'Home', href: '/', icon: Home }
 ]
 
 export function Navigation() {

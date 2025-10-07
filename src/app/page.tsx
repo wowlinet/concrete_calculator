@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Calculator, Building2, Zap, Shield, Check, Car, HomeIcon, Square, Blocks, Layers } from "lucide-react";
+import { Calculator, Building2, Zap, Check, Car, HomeIcon, Square, Blocks, Layers } from "lucide-react";
 import ConcreteCalculator from "@/components/concrete-calculator";
 import FAQItem from "@/components/faq-item";
 import { Metadata } from "next";
@@ -205,7 +205,7 @@ export default function Home() {
       <section className="container mx-auto px-4 py-16 bg-muted/30">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-foreground mb-12">
-            Popular Use Cases
+            Concrete Calculator Popular Use Cases
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="bg-card p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200">
@@ -300,16 +300,16 @@ export default function Home() {
 
       {/* CTA Section */}
       <section className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto text-center bg-card rounded-2xl shadow-xl p-12">
-          <Shield className="h-16 w-16 text-primary mx-auto mb-6" />
+        <div className="max-w-6xl mx-auto text-center bg-card rounded-2xl shadow-xl p-12">
+          <Building2 className="h-16 w-16 text-primary mx-auto mb-6" />
           <h2 className="text-3xl md:text-4xl font-bold text-card-foreground mb-6">
             Start Your Calculation Today
           </h2>
           <p className="text-lg text-muted-foreground mb-8">
-            Stop guessing and start planning with confidence. Our Concrete Calculator is free, fast, and easy to use. Whether it’s a driveway, slab, or foundation, you’ll know exactly how much concrete you need before you begin.
+            Stop guessing and start planning with confidence. Our Concrete Calculator is free, fast, and easy to use. Whether it&apos;s a driveway, slab, or foundation, you&apos;ll know exactly how much concrete you need before you begin.
           </p>
           <Link
-            href="/calculator"
+            href="/"
             className="inline-flex items-center px-8 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl"
           >
             <Calculator className="mr-2 h-5 w-5" />

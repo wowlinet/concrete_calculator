@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   },
   description: "Free online concrete calculator to help you accurately calculate concrete volume required for various construction projects. Supports different strength grades, mix ratio calculations, and provides professional construction advice.",
   keywords: ["concrete calculator", "concrete volume calculation", "construction engineering", "construction calculation", "cement calculation", "building materials", "concrete mix ratio", "construction tools"],
-  authors: [{ name: "Concrete Calculator Team", url: "https://concrete-calculator.com" }],
+  authors: [{ name: "Concrete Calculator Team", url: "https://concretecalculator.me" }],
   creator: "Concrete Calculator",
   publisher: "Concrete Calculator",
   formatDetection: {
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://concrete-calculator.com"),
+  metadataBase: new URL("https://concretecalculator.me"),
   alternates: {
     canonical: "/",
   },
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://concrete-calculator.com",
+    url: "https://concretecalculator.me",
     title: "Concrete Calculator - Professional Concrete Volume Calculation Tool",
     description: "Free online concrete calculator to help you accurately calculate concrete volume required for various construction projects. Supports different strength grades, mix ratio calculations, and provides professional construction advice.",
     siteName: "Concrete Calculator",
@@ -97,7 +97,7 @@ export default function RootLayout({
     "@type": "WebApplication",
     "name": "Concrete Calculator",
     "description": "Professional concrete volume calculation tool for construction projects",
-    "url": "https://concrete-calculator.com",
+    "url": "https://concretecalculator.me",
     "applicationCategory": "ConstructionApplication",
     "operatingSystem": "Web Browser",
     "offers": {

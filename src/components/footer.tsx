@@ -59,6 +59,38 @@ export function Footer() {
                   Concrete Footing Calculator
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/cost-calculator"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Concrete Cost Calculator
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/quikrete-calculator"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                 Quikrete Concrete Calculator
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/volume-calculator"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Concrete Volume Calculator
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/weight-calculator"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Concrete Weight Calculator
+                </Link>
+              </li>
             </ul>
           </div>
 

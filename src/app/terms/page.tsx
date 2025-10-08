@@ -92,9 +92,11 @@ export default function TermsPage() {
                 <li><strong>Merchantability:</strong> We make no warranties regarding the merchantability or fitness for a particular purpose</li>
                 <li><strong>Non-Infringement:</strong> We do not warrant that use of the Service will not infringe third-party rights</li>
               </ul>
-              <p className="mt-4 bg-yellow-50 dark:bg-yellow-950 border-l-4 border-yellow-500 p-4 rounded">
-                <strong>WARNING:</strong> Calculations provided by our Service are estimates only. Actual material requirements may vary based on site conditions, material properties, waste factors, and other variables. Always consult with qualified professionals and verify calculations before proceeding with construction.
-              </p>
+              <div className="mt-4 border-l-4 border-amber-400 p-5 rounded-lg shadow-sm backdrop-blur-sm">
+                <p>
+                  <strong>⚠️ WARNING:</strong> Calculations provided by our Service are estimates only. Actual material requirements may vary based on site conditions, material properties, waste factors, and other variables. Always consult with qualified professionals and verify calculations before proceeding with construction.
+                </p>
+              </div>
             </section>
 
             <section>
@@ -269,18 +271,20 @@ export default function TermsPage() {
 
             <section>
               <h2 className="text-2xl font-semibold text-foreground mb-4">18. Professional Disclaimer</h2>
-              <p className="bg-red-50 dark:bg-red-950 border-l-4 border-red-500 p-4 rounded">
-                <strong>IMPORTANT PROFESSIONAL DISCLAIMER:</strong> Concrete Calculator is a computational tool only and does not provide professional engineering, architectural, or construction advice. Our Service:
-              </p>
-              <ul className="list-disc pl-6 space-y-2 mt-4">
-                <li>Does NOT replace professional consultation with licensed engineers, architects, or contractors</li>
-                <li>Does NOT guarantee structural integrity, safety, or code compliance</li>
-                <li>Does NOT account for site-specific conditions, soil analysis, or environmental factors</li>
-                <li>Does NOT provide recommendations for specific projects or applications</li>
-              </ul>
-              <p className="mt-4">
-                <strong>You must consult with qualified professionals before making any construction decisions or beginning any construction project.</strong>
-              </p>
+              <div className="bg-muted/30 border-l-4 border-rose-400 p-5 rounded-lg shadow-sm backdrop-blur-sm">
+                <p>
+                  <strong>🔴 IMPORTANT PROFESSIONAL DISCLAIMER:</strong> Concrete Calculator is a computational tool only and does not provide professional engineering, architectural, or construction advice. Our Service:
+                </p>
+                <ul className="list-disc pl-6 space-y-2 mt-4">
+                  <li>Does NOT replace professional consultation with licensed engineers, architects, or contractors</li>
+                  <li>Does NOT guarantee structural integrity, safety, or code compliance</li>
+                  <li>Does NOT account for site-specific conditions, soil analysis, or environmental factors</li>
+                  <li>Does NOT provide recommendations for specific projects or applications</li>
+                </ul>
+                <p className="mt-4">
+                  <strong>You must consult with qualified professionals before making any construction decisions or beginning any construction project.</strong>
+                </p>
+              </div>
             </section>
 
             <section>
@@ -292,7 +296,7 @@ export default function TermsPage() {
                 <ul className="space-y-2">
                   <li><strong>Email:</strong> legal@concretecalculator.me</li>
                   <li><strong>Website:</strong> https://concretecalculator.me/contact</li>
-                  <li><strong>Mail:</strong> Concrete Calculator Team, [Address to be provided]</li>
+                  <li><strong>Mail:</strong> team@concretecalculator.me</li>
                 </ul>
               </div>
             </section>

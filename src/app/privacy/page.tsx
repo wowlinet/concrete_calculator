@@ -207,7 +207,7 @@ export default function PrivacyPage() {
                 <ul className="space-y-2">
                   <li><strong>Email:</strong> privacy@concretecalculator.me</li>
                   <li><strong>Website:</strong> https://concretecalculator.me/contact</li>
-                  <li><strong>Mail:</strong> Concrete Calculator Team, [Address to be provided]</li>
+                  <li><strong>Mail:</strong> team@concretecalculator.me</li>
                 </ul>
               </div>
             </section>

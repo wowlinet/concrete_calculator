@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Calculator, Home, Info } from 'lucide-react'
+import { Calculator, Home, Blocks } from 'lucide-react'
 import { ThemeToggle } from './theme-toggle'
 
 const navigation = [
-  { name: 'Home', href: '/', icon: Home }
+  { name: 'Home', href: '/', icon: Home },
+  { name: 'Block Calculator', href: '/block-calculator', icon: Blocks }
 ]
 
 export function Navigation() {

@@ -29,14 +29,6 @@ export function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link
-                  href="/"
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                >
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/slab-calculator"
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
@@ -49,6 +41,22 @@ export function Footer() {
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
                   Concrete Yard Calculator
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/bag-calculator"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Concrete Bag Calculator
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/footing-calculator"
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Concrete Footing Calculator
                 </Link>
               </li>
             </ul>

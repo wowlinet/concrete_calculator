@@ -45,10 +45,10 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/about"
+                  href="/yard-calculator"
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
-                  About Us
+                  Concrete Yard Calculator
                 </Link>
               </li>
             </ul>

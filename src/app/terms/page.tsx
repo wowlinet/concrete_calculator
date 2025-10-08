@@ -92,7 +92,7 @@ export default function TermsPage() {
                 <li><strong>Merchantability:</strong> We make no warranties regarding the merchantability or fitness for a particular purpose</li>
                 <li><strong>Non-Infringement:</strong> We do not warrant that use of the Service will not infringe third-party rights</li>
               </ul>
-              <div className="mt-4 border-l-4 border-amber-400 p-5 rounded-lg shadow-sm backdrop-blur-sm">
+              <div className="mt-4 border-l-4 p-5 rounded-lg shadow-sm">
                 <p>
                   <strong>⚠️ WARNING:</strong> Calculations provided by our Service are estimates only. Actual material requirements may vary based on site conditions, material properties, waste factors, and other variables. Always consult with qualified professionals and verify calculations before proceeding with construction.
                 </p>
@@ -271,7 +271,7 @@ export default function TermsPage() {
 
             <section>
               <h2 className="text-2xl font-semibold text-foreground mb-4">18. Professional Disclaimer</h2>
-              <div className="bg-muted/30 border-l-4 border-rose-400 p-5 rounded-lg shadow-sm backdrop-blur-sm">
+              <div className="border-l-4 border-rose-500 p-5 rounded-lg shadow-sm">
                 <p>
                   <strong>🔴 IMPORTANT PROFESSIONAL DISCLAIMER:</strong> Concrete Calculator is a computational tool only and does not provide professional engineering, architectural, or construction advice. Our Service:
                 </p>

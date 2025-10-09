@@ -5,12 +5,12 @@ import BlockFAQItem from "@/components/block-faq-item";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Concrete Block Calculator - Calculate Blocks, Mortar & Cost for Walls",
-  description: "Professional concrete block calculator for accurate block quantities, mortar volume and cost estimation. Calculate block needs for walls, fences, retaining walls, and more. Free online tool.",
+  title: "Concrete Block Calculator – Estimate Blocks, Mortar & Fill Easily",
+  description: "Use our free concrete block calculator to quickly estimate the number of blocks, mortar, and fill needed for your wall project. Accurate, simple, and fast!",
   keywords: "concrete block calculator, cinder block calculator, block wall calculator, masonry calculator, CMU calculator, block quantity calculator, mortar calculator, concrete block estimation",
   openGraph: {
-    title: "Concrete Block Calculator - Calculate Blocks, Mortar & Cost for Walls",
-    description: "Professional concrete block calculator for accurate block quantities, mortar volume and cost estimation. Calculate block needs for walls, fences, retaining walls, and more. Free online tool.",
+    title: "Concrete Block Calculator – Estimate Blocks, Mortar & Fill Easily",
+    description: "Use our free concrete block calculator to quickly estimate the number of blocks, mortar, and fill needed for your wall project. Accurate, simple, and fast!",
     type: "website",
   },
   alternates: {
@@ -18,8 +18,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Concrete Block Calculator - Calculate Blocks, Mortar & Cost for Walls",
-    description: "Professional concrete block calculator for accurate block quantities, mortar volume and cost estimation. Calculate block needs for walls, fences, retaining walls, and more. Free online tool.",
+    title: "Concrete Block Calculator – Estimate Blocks, Mortar & Fill Easily",
+    description: "Use our free concrete block calculator to quickly estimate the number of blocks, mortar, and fill needed for your wall project. Accurate, simple, and fast!",
   },
 };
 

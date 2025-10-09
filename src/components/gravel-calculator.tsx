@@ -58,11 +58,19 @@ interface ProjectParams {
   pricePerTon: string; // 每吨价格
 }
 
+// 组件 Props 接口
+interface GravelCalculatorProps {
+  defaultGravelType?: string; // 默认砾石类型
+}
+
 /**
  * 砾石计算器组件
  * 提供完整的砾石体积、重量和成本计算功能
  */
-export default function GravelCalculator() {
+export default function GravelCalculator({ defaultGravelType = 'crushed-stone' }: GravelCalculatorProps = {}) {
+  const initialGravelType = defaultGravelType || 'crushed-stone';
+  const initialDensity = GRAVEL_PRESETS[initialGravelType]?.density.toString() || '1680';
+
   const [params, setParams] = useState<ProjectParams>({
     length: '10',
     lengthUnit: 'feet',
@@ -71,8 +79,8 @@ export default function GravelCalculator() {
     depth: '4',
     depthUnit: 'inches',
 
-    gravelType: 'crushed-stone',
-    customDensity: '1680',
+    gravelType: initialGravelType,
+    customDensity: initialDensity,
 
     wasteFactor: '5',
     pricePerTon: '',
@@ -264,8 +272,8 @@ export default function GravelCalculator() {
       depth: '4',
       depthUnit: 'inches',
 
-      gravelType: 'crushed-stone',
-      customDensity: '1680',
+      gravelType: initialGravelType,
+      customDensity: initialDensity,
 
       wasteFactor: '5',
       pricePerTon: '',

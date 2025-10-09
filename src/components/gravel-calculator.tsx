@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calculator, RotateCcw, Download, Info } from 'lucide-react';
 
 // 单位类型
@@ -27,12 +27,19 @@ const GRAVEL_PRESETS: Record<string, GravelPreset> = {
   'regular-gravel': { label: 'Regular gravel', density: 1346 },
   'gravel-dry': { label: 'Gravel (dry)', density: 1510 },
   'gravel-dry-1-4-2': { label: 'Gravel (dry, 1/4 - 2”)', density: 1680 },
-  'pea-gravel': { label: 'Pea Gravel', density: 1500 },
-  'river-rock': { label: 'River Rock', density: 1600 },
-  'crushed-stone': { label: 'Crushed Stone', density: 1680 },
-  'crushed-granite': { label: 'Crushed Granite', density: 1750 },
-  'limestone': { label: 'Limestone', density: 1500 },
-  'sandstone': { label: 'Sandstone', density: 1400 },
+  'gravel-wet-1-4-2': { label: 'Gravel (wet, 1/4 - 2”)', density: 2020 },
+  'gravel-pit-run': { label: 'Gravel (pit-run)', density: 1930 },
+  'gravel-sand-dry': { label: 'Gravel and sand (dry)', density: 1720 },
+  'gravel-sand-wet': { label: 'Gravel and sand (wet)', density: 2020 },
+  'gravel-clay-dry': { label: 'Gravel and clay (dry)', density: 1420 },
+  'gravel-clay-wet': { label: 'Gravel and clay (wet)', density: 1540 },
+  'cheshire-pink-gravel': { label: 'Cheshire pink gravel', density: 1545 },
+  'cotswold-gold-gravel': { label: 'Cotswold gold gravel', density: 2098 },
+  'crushed-stone': { label: 'Crushed Stone', density: 1600 },
+  'ivory-coast-gravel': { label: 'Ivory coast gravel', density: 1506 },
+  'dolomite-gravel': { label: 'Dolomite gravel', density: 1865 },
+  'pea-gravel': { label: 'Pea Gravel', density: 1788 },
+  'sunset-gold-gravel': { label: 'Sunset Gold gravel', density: 1505 },
 };
 
 // 项目参数接口
@@ -192,7 +199,7 @@ export default function GravelCalculator() {
       volume: Math.round(volume * 1000) / 1000,
       volumeYards: Math.round(volumeYards * 100) / 100,
       volumeFeet: Math.round(volumeFeet * 100) / 100,
-      gravelWeight: Math.round(gravelWeight * 100) / 100,
+      gravelWeight: Math.round(gravelWeight * 1000) / 1000,
       gravelWeightKg: Math.round(gravelWeightKg * 10) / 10,
       totalCost: Math.round(totalCost * 100) / 100,
       area: Math.round(area * 100) / 100,
@@ -311,6 +318,14 @@ export default function GravelCalculator() {
     URL.revokeObjectURL(url);
   };
 
+  // 自动计算：当参数变化且已有结果时，自动重新计算
+  useEffect(() => {
+    if (result) {
+      calculateGravel();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
+
   return (
     <div className="bg-card rounded-xl shadow-lg p-6">
       <h2 className="text-2xl font-semibold text-card-foreground mb-6 flex items-center">
@@ -417,12 +432,11 @@ export default function GravelCalculator() {
               onChange={(e) => handleGravelTypeChange(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground border-border"
             >
-              <option value="pea-gravel">Pea Gravel (1500 kg/m³)</option>
-              <option value="river-rock">River Rock (1600 kg/m³)</option>
-              <option value="crushed-stone">Crushed Stone (1680 kg/m³)</option>
-              <option value="crushed-granite">Crushed Granite (1750 kg/m³)</option>
-              <option value="limestone">Limestone (1500 kg/m³)</option>
-              <option value="sandstone">Sandstone (1400 kg/m³)</option>
+              {Object.entries(GRAVEL_PRESETS).map(([key, preset]) => (
+                <option key={key} value={key}>
+                  {preset.label} ({preset.density} kg/m³)
+                </option>
+              ))}
               <option value="custom">Custom Density</option>
             </select>
           </div>
@@ -614,7 +628,7 @@ export default function GravelCalculator() {
               <div>
                 <div className="text-xs text-muted-foreground">Tons</div>
                 <div className="text-lg font-bold text-primary">
-                  {result.gravelWeight} tons
+                  {Number(result.gravelWeight.toFixed(3))} tons
                 </div>
               </div>
               <div>

@@ -6,18 +6,130 @@
 
   <!-- Homepage -->
   <url>
-    <loc>https://concrete-calculator.com/</loc>
-    <lastmod>2024-01-25</lastmod>
+    <loc>https://concretecalculator.me/</loc>
+    <lastmod>2025-10-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
 
   <!-- About Page -->
   <url>
-    <loc>https://concrete-calculator.com/about</loc>
-    <lastmod>2024-01-25</lastmod>
+    <loc>https://concretecalculator.me/about</loc>
+    <lastmod>2025-10-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+  </url>
+
+  <!-- Privacy Policy -->
+  <url>
+    <loc>https://concretecalculator.me/privacy</loc>
+    <lastmod>2025-10-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- Terms of Service -->
+  <url>
+    <loc>https://concretecalculator.me/terms</loc>
+    <lastmod>2025-10-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- Block Calculator -->
+  <url>
+    <loc>https://concretecalculator.me/block-calculator</loc>
+    <lastmod>2025-10-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Gravel Calculator -->
+  <url>
+    <loc>https://concretecalculator.me/gravel-calculator</loc>
+    <lastmod>2025-10-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Pea Gravel Calculator -->
+  <url>
+    <loc>https://concretecalculator.me/pea-gravel-calculator</loc>
+    <lastmod>2025-10-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Slab Calculator -->
+  <url>
+    <loc>https://concretecalculator.me/slab-calculator</loc>
+    <lastmod>2025-10-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Yard Calculator -->
+  <url>
+    <loc>https://concretecalculator.me/yard-calculator</loc>
+    <lastmod>2025-10-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Bag Calculator -->
+  <url>
+    <loc>https://concretecalculator.me/bag-calculator</loc>
+    <lastmod>2025-10-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Footing Calculator -->
+  <url>
+    <loc>https://concretecalculator.me/footing-calculator</loc>
+    <lastmod>2025-10-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Cost Calculator -->
+  <url>
+    <loc>https://concretecalculator.me/cost-calculator</loc>
+    <lastmod>2025-10-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Volume Calculator -->
+  <url>
+    <loc>https://concretecalculator.me/volume-calculator</loc>
+    <lastmod>2025-10-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Weight Calculator -->
+  <url>
+    <loc>https://concretecalculator.me/weight-calculator</loc>
+    <lastmod>2025-10-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Quikrete Calculator -->
+  <url>
+    <loc>https://concretecalculator.me/quikrete-calculator</loc>
+    <lastmod>2025-10-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Sakrete Calculator -->
+  <url>
+    <loc>https://concretecalculator.me/sakrete-calculator</loc>
+    <lastmod>2025-10-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
 
 </urlset>

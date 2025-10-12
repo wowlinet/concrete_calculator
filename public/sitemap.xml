@@ -132,4 +132,20 @@
     <priority>0.9</priority>
   </url>
 
+  <!-- Cement Calculator -->
+  <url>
+    <loc>https://concretecalculator.me/cement-calculator</loc>
+    <lastmod>2025-10-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Board Foot Calculator -->
+  <url>
+    <loc>https://concretecalculator.me/board-foot-calculator</loc>
+    <lastmod>2025-10-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
 </urlset>

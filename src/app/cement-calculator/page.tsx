@@ -5,11 +5,11 @@ import SlabFAQItem from "@/components/slab-faq-item";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Cement Calculator – Calculate Cement, Sand & Aggregate for Concrete",
-  description: "Free cement calculator to estimate cement quantity needed for concrete and mortar. Calculate cement bags, sand, and aggregate with accurate mix ratios.",
-  keywords: "cement calculator, concrete cement calculator, mortar calculator, cement quantity calculator, cement bag calculator, sand cement calculator, concrete mix calculator",
+  title: "Cement Calculator – Calculate Cement Bags, Yards & Slabs Instantly",
+  description: "Quickly estimate how much cement you need for slabs, sidewalks, blocks, or driveways. Use our free cement calculator to find cement bags, cubic yards, and mix ratios.",
+  keywords: "cement calculator",
   openGraph: {
-    title: "Cement Calculator – Calculate Cement, Sand & Aggregate for Concrete",
+    title: "Cement Calculator – Calculate Cement Bags, Yards & Slabs Instantly",
     description: "Free cement calculator to estimate cement quantity needed for concrete and mortar. Calculate cement bags, sand, and aggregate with accurate mix ratios.",
     type: "website",
   },

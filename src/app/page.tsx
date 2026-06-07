@@ -274,23 +274,31 @@ export default function Home() {
             Frequently Asked Questions (FAQ)
           </h2>
           <div className="space-y-4">
-            <FAQItem 
+            <FAQItem
+              question="How to calculate how much concrete needed?"
+              answer="To calculate how much concrete you need, measure the length, width, and thickness (or depth) of your project area. Multiply these dimensions to get the volume in cubic feet or cubic meters. For example, a 10ft × 10ft × 4in slab needs 33.3 cubic feet (1.23 cubic yards) of concrete. Our calculator does this instantly - just enter your dimensions and select your units. It also converts the volume to the number of concrete bags you'll need (60lb or 80lb bags) and provides material breakdown (cement, sand, gravel). For best results, always add 5-10% extra to account for spillage and uneven ground."
+            />
+            <FAQItem
+              question="How to calculate concrete for a slab?"
+              answer="Calculating concrete for a slab is straightforward with our slab calculator. First, measure your slab's length and width in feet (or meters), then determine the thickness - typically 4 inches for patios and walkways, 6 inches for driveways and garage floors. The formula is: Volume = Length × Width × Thickness. For example, a 12ft × 14ft patio with 4-inch thickness needs 168 cubic feet or 6.22 cubic yards of concrete (approximately 47 bags of 80lb concrete mix). Our calculator automatically handles unit conversions and tells you exactly how many cubic yards to order or how many bags to buy. You can also use our dedicated Slab Calculator for more detailed results including reinforcement recommendations and finishing material estimates."
+            />
+            <FAQItem
               question="How accurate is this concrete calculator?"
               answer="Our calculator uses standard concrete density and mix ratios. It's accurate for most projects, but we recommend consulting your supplier for final quantities."
             />
-            <FAQItem 
+            <FAQItem
               question="Can I use it for small DIY projects?"
               answer="Yes! It's perfect for garden paths, patios, small driveways, or any personal project."
             />
-            <FAQItem 
+            <FAQItem
               question="Does it calculate cost as well?"
               answer="Absolutely. Just enter your local cost per cubic yard (or per bag), and the calculator will estimate your total budget."
             />
-            <FAQItem 
+            <FAQItem
               question="What's the standard concrete mix ratio?"
               answer="The most common ratio is 1:2:4 (cement:sand:gravel). However, ratios may vary depending on strength requirements."
             />
-            <FAQItem 
+            <FAQItem
               question="Can I switch between metric and imperial units?"
               answer="Yes, our calculator supports both systems so you can choose what works best for you."
             />

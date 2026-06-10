@@ -1,7 +1,16 @@
 'use client'
 
-import React, { useState } from 'react';
-import { Calculator, RotateCcw, Download, Info } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import {
+  Calculator,
+  ChevronDown,
+  Download,
+  Info,
+  Package,
+  Percent,
+  RotateCcw,
+  Scale,
+} from 'lucide-react';
 
 // 单位类型
 type UnitType = 'feet' | 'inches' | 'yards' | 'meters' | 'centimeters' | 'millimeters';
@@ -92,6 +101,15 @@ export default function BlockCalculator() {
   const CEMENT_BAG_WEIGHT = 50; // kg per bag
   const WATER_CEMENT_RATIO = 0.5; // 水灰比
 
+  const unitOptions: { value: UnitType; label: string }[] = [
+    { value: 'feet', label: 'ft' },
+    { value: 'inches', label: 'in' },
+    { value: 'yards', label: 'yd' },
+    { value: 'meters', label: 'm' },
+    { value: 'centimeters', label: 'cm' },
+    { value: 'millimeters', label: 'mm' },
+  ];
+
   // 单位辅助函数
   const getUnitInfo = (unit: UnitType) => {
     switch (unit) {
@@ -112,26 +130,7 @@ export default function BlockCalculator() {
     }
   };
 
-  // 创建单位选择下拉菜单的辅助函数
-  const createUnitSelector = (value: UnitType, onChange: (unit: UnitType) => void, className: string = "", showMM: boolean = false) => (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value as UnitType)}
-      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground border-border ${className}`}
-    >
-      <option value="feet">feet</option>
-      <option value="inches">inches</option>
-      <option value="yards">yards</option>
-      <option value="meters">meters</option>
-      <option value="centimeters">centimeters</option>
-      {showMM && <option value="millimeters">millimeters</option>}
-    </select>
-  );
-
-  /**
-   * 验证输入参数
-   */
-  const validateInputs = (): boolean => {
+  const getValidationErrors = (): Record<string, string> => {
     const newErrors: Record<string, string> = {};
 
     if (!params.wallLength || parseFloat(params.wallLength) <= 0) {
@@ -156,18 +155,13 @@ export default function BlockCalculator() {
       newErrors.blockPrice = 'Please enter a valid block price';
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
   };
 
   /**
    * 主计算函数
    */
-  const calculateBlocks = () => {
-    if (!validateInputs()) {
-      return;
-    }
-
+  const buildCalculationResult = (): CalculationResult => {
     // 转换所有尺寸到米
     const wallLengthM = parseFloat(params.wallLength) * getUnitInfo(params.wallLengthUnit).toMeters;
     const wallHeightM = parseFloat(params.wallHeight) * getUnitInfo(params.wallHeightUnit).toMeters;
@@ -242,30 +236,37 @@ export default function BlockCalculator() {
     // 计算标准砂浆袋数（100块砖需要3袋）
     const mortarBags = Math.ceil((blocksNeeded / 100) * 3);
 
-    const calculatedResult: CalculationResult = {
-      blocksNeeded: blocksNeeded,
+    return {
+      blocksNeeded,
       mortarVolumeCubicFeet: Math.round(mortarVolumeFt3 * 100) / 100,
       mortarVolumeCubicMeters: Math.round(mortarVolumeM3 * 1000) / 1000,
-      mortarBags: mortarBags,
+      mortarBags,
       cementKg: Math.round(cementKg * 10) / 10,
-      cementBags: cementBags,
+      cementBags,
       sandKg: Math.round(sandKg * 10) / 10,
       waterLiters: Math.round(waterLiters * 10) / 10,
       totalCost: Math.round(totalCost * 100) / 100,
-      wallArea: Math.round(wallArea * 100) / 100
+      wallArea: Math.round(wallArea * 100) / 100,
     };
-
-    setResult(calculatedResult);
   };
+
+  useEffect(() => {
+    const nextErrors = getValidationErrors();
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      setResult(null);
+      return;
+    }
+
+    setResult(buildCalculationResult());
+  }, [params, wastePercentage]);
 
   /**
    * 更新参数
    */
   const updateParam = (key: keyof ProjectParams, value: string) => {
-    setParams(prev => ({ ...prev, [key]: value }));
-    if (errors[key]) {
-      setErrors(prev => ({ ...prev, [key]: '' }));
-    }
+    setParams((prev) => ({ ...prev, [key]: value }));
   };
 
   /**
@@ -328,8 +329,6 @@ export default function BlockCalculator() {
       sandPrice: '0.05'
     });
     setWastePercentage('5');
-    setResult(null);
-    setErrors({});
   };
 
   /**
@@ -379,374 +378,336 @@ export default function BlockCalculator() {
     URL.revokeObjectURL(url);
   };
 
+  const renderField = (
+    label: string,
+    valueKey: keyof ProjectParams | 'wastePercentage',
+    opts: {
+      unitKey?: keyof ProjectParams;
+      placeholder?: string;
+      step?: string;
+      min?: string;
+      max?: string;
+      suffix?: string;
+      helperText?: string;
+      errorKey?: string;
+      allowMillimeters?: boolean;
+      onValueChange?: (value: string) => void;
+    } = {}
+  ) => {
+    const isWasteField = valueKey === 'wastePercentage';
+    const value = isWasteField ? wastePercentage : ((params[valueKey as keyof ProjectParams] as string) ?? '');
+    const error = opts.errorKey ? errors[opts.errorKey] : undefined;
+    const unit = opts.unitKey ? (params[opts.unitKey] as UnitType) : undefined;
+    const unitItems = opts.allowMillimeters
+      ? unitOptions
+      : unitOptions.filter((option) => option.value !== 'millimeters');
+
+    return (
+      <div>
+        <label className="mb-2 block text-sm font-medium text-muted-foreground">{label}</label>
+        <div
+          className={`flex items-stretch overflow-hidden rounded-lg border bg-background transition-shadow focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent ${
+            error ? 'border-destructive' : 'border-border'
+          }`}
+        >
+          <input
+            type="number"
+            value={value}
+            onChange={(e) =>
+              opts.onValueChange
+                ? opts.onValueChange(e.target.value)
+                : updateParam(valueKey as keyof ProjectParams, e.target.value)
+            }
+            placeholder={opts.placeholder}
+            step={opts.step ?? '0.01'}
+            min={opts.min ?? '0'}
+            max={opts.max}
+            className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-foreground outline-none"
+          />
+          {opts.unitKey ? (
+            <div className="relative flex w-24 shrink-0 items-center border-l border-border">
+              <select
+                value={unit}
+                onChange={(e) => updateParam(opts.unitKey!, e.target.value)}
+                className="h-full w-full cursor-pointer appearance-none bg-transparent py-2.5 pl-3 pr-8 text-sm text-foreground outline-none"
+                aria-label={`${label} unit`}
+              >
+                {unitItems.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2.5 h-4 w-4 text-muted-foreground" />
+            </div>
+          ) : opts.suffix ? (
+            <span className="flex w-20 shrink-0 items-center justify-center border-l border-border px-3 text-sm text-muted-foreground">
+              {opts.suffix}
+            </span>
+          ) : null}
+        </div>
+        {error ? <p className="mt-1 text-sm text-destructive">{error}</p> : null}
+        {!error && opts.helperText ? (
+          <p className="mt-1 text-xs text-muted-foreground">{opts.helperText}</p>
+        ) : null}
+      </div>
+    );
+  };
+
+  const ResultRow = ({
+    icon,
+    label,
+    value,
+  }: {
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+  }) => (
+    <div className="flex items-center justify-between py-3">
+      <div className="flex items-center gap-2.5 text-sm text-foreground">
+        <span className="text-primary">{icon}</span>
+        {label}
+      </div>
+      <span className="text-sm font-semibold text-foreground">{value}</span>
+    </div>
+  );
+
   return (
-    <div className="bg-card rounded-xl shadow-lg p-6">
-      <h2 className="text-2xl font-semibold text-card-foreground mb-6 flex items-center">
-        <Calculator className="mr-2 h-6 w-6" />
-        Concrete Block Calculator
-      </h2>
-
-      {/* Input Fields */}
-      <div className="mb-6">
-        <h3 className="text-lg font-medium text-card-foreground mb-3">
-          Wall Dimensions
-        </h3>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Wall Length
-            </label>
-            <div className="flex gap-1">
-              <input
-                type="number"
-                value={params.wallLength}
-                onChange={(e) => updateParam('wallLength', e.target.value)}
-                className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
-                  errors.wallLength ? 'border-destructive' : 'border-border'
-                }`}
-                placeholder="10"
-                step="0.01"
-                min="0"
-              />
-              {createUnitSelector(params.wallLengthUnit, (unit) => updateParam('wallLengthUnit', unit), "w-24")}
-            </div>
-            {errors.wallLength && <p className="text-destructive text-sm mt-1">{errors.wallLength}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Wall Height
-            </label>
-            <div className="flex gap-1">
-              <input
-                type="number"
-                value={params.wallHeight}
-                onChange={(e) => updateParam('wallHeight', e.target.value)}
-                className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
-                  errors.wallHeight ? 'border-destructive' : 'border-border'
-                }`}
-                placeholder="8"
-                step="0.01"
-                min="0"
-              />
-              {createUnitSelector(params.wallHeightUnit, (unit) => updateParam('wallHeightUnit', unit), "w-24")}
-            </div>
-            {errors.wallHeight && <p className="text-destructive text-sm mt-1">{errors.wallHeight}</p>}
-          </div>
-        </div>
-      </div>
-
-      {/* Block Specifications */}
-      <div className="mb-6">
-        <h3 className="text-lg font-medium text-card-foreground mb-3">
-          Block Specifications
-        </h3>
-
-        <div className="space-y-4">
-          {/* 预设尺寸选择器 */}
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Block Size
-            </label>
-            <select
-              value={blockPreset}
-              onChange={(e) => handlePresetChange(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground border-border"
-            >
-              <option value="8x8">8&quot; × 8&quot;</option>
-              <option value="12x8">12&quot; × 8&quot;</option>
-              <option value="16x8">16&quot; × 8&quot; (Standard)</option>
-              <option value="8x4">8&quot; × 4&quot;</option>
-              <option value="12x4">12&quot; × 4&quot;</option>
-              <option value="16x4">16&quot; × 4&quot;</option>
-              <option value="custom">Custom Size</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Block Length {blockPreset === 'custom' && '(Custom)'}
-            </label>
-            <div className="flex gap-1">
-              <input
-                type="number"
-                value={params.blockLength}
-                onChange={(e) => updateBlockParam('blockLength', e.target.value)}
-                className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
-                  errors.blockLength ? 'border-destructive' : 'border-border'
-                }`}
-                placeholder="16"
-                step="0.01"
-                min="0"
-              />
-              {createUnitSelector(params.blockLengthUnit, (unit) => updateBlockParam('blockLengthUnit', unit), "w-24")}
-            </div>
-            {errors.blockLength && <p className="text-destructive text-sm mt-1">{errors.blockLength}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Block Height {blockPreset === 'custom' && '(Custom)'}
-            </label>
-            <div className="flex gap-1">
-              <input
-                type="number"
-                value={params.blockHeight}
-                onChange={(e) => updateBlockParam('blockHeight', e.target.value)}
-                className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
-                  errors.blockHeight ? 'border-destructive' : 'border-border'
-                }`}
-                placeholder="8"
-                step="0.01"
-                min="0"
-              />
-              {createUnitSelector(params.blockHeightUnit, (unit) => updateBlockParam('blockHeightUnit', unit), "w-24")}
-            </div>
-            {errors.blockHeight && <p className="text-destructive text-sm mt-1">{errors.blockHeight}</p>}
-            <div className="mt-2 p-3 rounded-lg border border-border">
-              <div className="flex items-start space-x-2">
-                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-blue-600 dark:text-blue-400">
-                  <div className="font-medium mb-1">Standard Block Sizes:</div>
-                  <div>• Standard: 40×20×20cm (16×8×8 inches)</div>
-                  <div>• Half: 20×20×20cm (8×8×8 inches)</div>
-                  <div>• Jumbo: 50×25×20cm (20×10×8 inches)</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Mortar Joint Thickness
-            </label>
-            <div className="flex gap-1">
-              <input
-                type="number"
-                value={params.mortarJointThickness}
-                onChange={(e) => updateParam('mortarJointThickness', e.target.value)}
-                className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
-                  errors.mortarJointThickness ? 'border-destructive' : 'border-border'
-                }`}
-                placeholder="10"
-                step="0.1"
-                min="0"
-              />
-              {createUnitSelector(params.mortarJointUnit, (unit) => updateParam('mortarJointUnit', unit), "w-24", true)}
-            </div>
-            {errors.mortarJointThickness && <p className="text-destructive text-sm mt-1">{errors.mortarJointThickness}</p>}
-            <p className="text-xs text-muted-foreground mt-1">
-              Standard joint thickness: 10mm (3/8 inch). Set to 0 for dry-stacked blocks.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Pricing and Waste */}
-      <div className="mb-6">
-        <h3 className="text-lg font-medium text-card-foreground mb-3">
-          Pricing & Waste
-        </h3>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Waste Percentage (%)
-            </label>
-            <input
-              type="number"
-              value={wastePercentage}
-              onChange={(e) => setWastePercentage(e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
-                errors.wastePercentage ? 'border-destructive' : 'border-border'
-              }`}
-              placeholder="5"
-              step="1"
-              min="0"
-              max="100"
-            />
-            {errors.wastePercentage && <p className="text-destructive text-sm mt-1">{errors.wastePercentage}</p>}
-            <p className="text-xs text-muted-foreground mt-1">
-              Add extra blocks for breakage and cutting (typically 5-10%)
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-2">
-                Block Price ($)
-              </label>
-              <input
-                type="number"
-                value={params.blockPrice}
-                onChange={(e) => updateParam('blockPrice', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
-                  errors.blockPrice ? 'border-destructive' : 'border-border'
-                }`}
-                placeholder="2.50"
-                step="0.01"
-                min="0"
-              />
-              {errors.blockPrice && <p className="text-destructive text-sm mt-1">{errors.blockPrice}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-2">
-                Cement Price ($/bag)
-              </label>
-              <input
-                type="number"
-                value={params.cementPrice}
-                onChange={(e) => updateParam('cementPrice', e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground border-border"
-                placeholder="12"
-                step="0.01"
-                min="0"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-2">
-                Sand Price ($/kg)
-              </label>
-              <input
-                type="number"
-                value={params.sandPrice}
-                onChange={(e) => updateParam('sandPrice', e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground border-border"
-                placeholder="0.05"
-                step="0.01"
-                min="0"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-3 mb-6">
-        <button
-          onClick={calculateBlocks}
-          className="flex-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-[0.7rem] px-4 rounded-lg transition-colors duration-200 flex items-center justify-center cursor-pointer"
-        >
-          <Calculator className="mr-2 h-4 w-4" />
-          Calculate
-        </button>
-        <button
-          onClick={resetForm}
-          className="bg-secondary hover:bg-secondary/80 text-secondary-foreground font-semibold py-[0.7rem] px-4 rounded-lg transition-colors duration-200 flex items-center justify-center cursor-pointer"
-        >
-          <RotateCcw className="mr-2 h-4 w-4" />
-          Reset
-        </button>
-      </div>
-
-      {/* Results Display */}
-      {result ? (
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium text-card-foreground">
-            Calculation Results
-          </h3>
-
-          {/* Block Count Summary */}
-          <div className="bg-primary/10 p-4 rounded-lg border border-border">
-            <div className="text-sm text-primary font-medium mb-3">Blocks Needed</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <div className="text-xs text-muted-foreground">Wall Area</div>
-                <div className="text-lg font-bold text-primary">
-                  {result.wallArea} m²
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Total Blocks (with {wastePercentage}% waste)</div>
-                <div className="text-lg font-bold text-primary">
-                  {result.blocksNeeded} blocks
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Mortar Volume Summary */}
-          <div className="bg-primary/10 p-4 rounded-lg border border-border">
-            <div className="text-sm text-primary font-medium mb-3">Mortar Volume</div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <div className="text-xs text-muted-foreground">Cubic Feet</div>
-                <div className="text-lg font-bold text-primary">
-                  {result.mortarVolumeCubicFeet} ft³
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Cubic Meters</div>
-                <div className="text-lg font-bold text-primary">
-                  {result.mortarVolumeCubicMeters} m³
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Standard Bags</div>
-                <div className="text-lg font-bold text-primary">
-                  {result.mortarBags} bags
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Material Quantities */}
-          <div className="bg-muted/20 p-4 rounded-lg border border-border">
-            <div className="text-sm font-medium text-card-foreground mb-3">
-              Required Materials (1:6 cement:sand ratio)
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <div className="bg-primary/10 p-3 rounded-lg">
-                <div className="text-sm text-primary font-medium">Cement</div>
-                <div className="text-lg font-bold text-primary">
-                  {result.cementKg} kg
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  ({result.cementBags} bags)
-                </div>
-              </div>
-              <div className="bg-primary/10 p-3 rounded-lg">
-                <div className="text-sm text-primary font-medium">Sand</div>
-                <div className="text-lg font-bold text-primary">
-                  {result.sandKg} kg
-                </div>
-              </div>
-              <div className="bg-primary/10 p-3 rounded-lg">
-                <div className="text-sm text-primary font-medium">Water</div>
-                <div className="text-lg font-bold text-primary">
-                  {result.waterLiters} L
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Cost Summary */}
-          <div className="bg-primary/10 p-3 rounded-lg">
-            <div className="text-sm text-primary font-medium">Total Cost</div>
-            <div className="text-xl font-bold text-primary">
-              ${result.totalCost}
-            </div>
-          </div>
-
+    <div>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="flex items-center text-2xl font-semibold text-foreground">
+          <Calculator className="mr-2 h-6 w-6" />
+          Concrete Block Calculator
+        </h2>
+        <div className="flex items-center gap-2">
           <button
             onClick={exportResult}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center"
+            disabled={!result}
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            title="Save results as a text file"
           >
-            <Download className="mr-2 h-4 w-4" />
-            Export Results
+            <Download className="h-4 w-4" />
+            Save
+          </button>
+          <button
+            onClick={resetForm}
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-primary px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Reset
           </button>
         </div>
-      ) : (
-        <div className="text-center py-8">
-          <Calculator className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground">
-            Enter wall and block dimensions, then click Calculate
-          </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="space-y-6">
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <h3 className="mb-4 text-lg font-medium text-card-foreground">Wall Dimensions</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {renderField('Wall Length', 'wallLength', {
+                unitKey: 'wallLengthUnit',
+                placeholder: '10',
+                errorKey: 'wallLength',
+              })}
+              {renderField('Wall Height', 'wallHeight', {
+                unitKey: 'wallHeightUnit',
+                placeholder: '8',
+                errorKey: 'wallHeight',
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <h3 className="mb-4 text-lg font-medium text-card-foreground">Block Specifications</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-muted-foreground">Block Size</label>
+                <div className="relative">
+                  <select
+                    value={blockPreset}
+                    onChange={(e) => handlePresetChange(e.target.value)}
+                    className="h-11 w-full cursor-pointer appearance-none rounded-lg border border-border bg-background px-3 pr-10 text-sm text-foreground outline-none transition-shadow focus:border-transparent focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="8x8">8&quot; × 8&quot;</option>
+                    <option value="12x8">12&quot; × 8&quot;</option>
+                    <option value="16x8">16&quot; × 8&quot; (Standard)</option>
+                    <option value="8x4">8&quot; × 4&quot;</option>
+                    <option value="12x4">12&quot; × 4&quot;</option>
+                    <option value="16x4">16&quot; × 4&quot;</option>
+                    <option value="custom">Custom Size</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {renderField(`Block Length${blockPreset === 'custom' ? ' (Custom)' : ''}`, 'blockLength', {
+                  unitKey: 'blockLengthUnit',
+                  placeholder: '16',
+                  errorKey: 'blockLength',
+                  onValueChange: (value) => updateBlockParam('blockLength', value),
+                })}
+                {renderField(`Block Height${blockPreset === 'custom' ? ' (Custom)' : ''}`, 'blockHeight', {
+                  unitKey: 'blockHeightUnit',
+                  placeholder: '8',
+                  errorKey: 'blockHeight',
+                  onValueChange: (value) => updateBlockParam('blockHeight', value),
+                })}
+              </div>
+
+              {renderField('Mortar Joint Thickness', 'mortarJointThickness', {
+                unitKey: 'mortarJointUnit',
+                placeholder: '10',
+                step: '0.1',
+                errorKey: 'mortarJointThickness',
+                allowMillimeters: true,
+                helperText: 'Standard joint thickness: 10 mm (3/8 in). Set to 0 for dry-stacked blocks.',
+              })}
+
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                <div className="flex items-start gap-2">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <div className="text-sm text-muted-foreground">
+                    <div className="mb-1 font-medium text-foreground">Common Block Sizes</div>
+                    <div>Standard: 40×20×20 cm (16×8×8 in)</div>
+                    <div>Half: 20×20×20 cm (8×8×8 in)</div>
+                    <div>Jumbo: 50×25×20 cm (20×10×8 in)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <h3 className="mb-4 text-lg font-medium text-card-foreground">Pricing &amp; Waste</h3>
+            <div className="space-y-4">
+              {renderField('Waste Percentage', 'wastePercentage', {
+                suffix: '%',
+                placeholder: '5',
+                step: '1',
+                min: '0',
+                max: '100',
+                errorKey: 'wastePercentage',
+                helperText: 'Add extra blocks for cutting and breakage, usually 5% to 10%.',
+                onValueChange: setWastePercentage,
+              })}
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {renderField('Block Price ($)', 'blockPrice', {
+                  placeholder: '2.50',
+                  errorKey: 'blockPrice',
+                })}
+                {renderField('Cement Price ($/bag)', 'cementPrice', {
+                  placeholder: '12',
+                })}
+                {renderField('Sand Price ($/kg)', 'sandPrice', {
+                  placeholder: '0.05',
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+            <span className="text-primary">💡</span>
+            <span>
+              <span className="font-medium text-foreground">Tip:</span> Results update automatically as you adjust dimensions, block size, and pricing.
+            </span>
+          </div>
         </div>
-      )}
+
+        <div>
+          <div className="lg:sticky lg:top-24">
+            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+              <div className="flex items-center justify-between bg-primary px-5 py-4">
+                <h3 className="font-semibold text-primary-foreground">Estimated Results</h3>
+                <span className="flex items-center gap-1.5 text-sm text-primary-foreground/90">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-foreground/70"></span>
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-foreground"></span>
+                  </span>
+                  Live
+                </span>
+              </div>
+
+              {result ? (
+                <div>
+                  <div className="px-5 py-4">
+                    <div className="mb-1 text-sm text-muted-foreground">Blocks Needed</div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-4xl font-bold text-primary">{result.blocksNeeded.toLocaleString()}</span>
+                      <span className="text-xl font-semibold text-primary">pcs</span>
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">Including {wastePercentage || '0'}% waste allowance</div>
+                  </div>
+
+                  <div className="border-t border-border bg-primary/5 px-5 py-4">
+                    <div className="mb-1 text-sm text-muted-foreground">Estimated Cost</div>
+                    <div className="text-3xl font-bold text-primary">${result.totalCost.toLocaleString()}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">Blocks, cement, and sand included</div>
+                  </div>
+
+                  <div className="divide-y divide-border border-t border-border px-5">
+                    <ResultRow icon={<Scale className="h-4 w-4" />} label="Wall Area" value={`${result.wallArea.toLocaleString()} m²`} />
+                    <ResultRow icon={<Package className="h-4 w-4" />} label="Mortar Bags" value={`${result.mortarBags} bags`} />
+                    <ResultRow icon={<Package className="h-4 w-4" />} label="Cement Bags" value={`${result.cementBags} bags`} />
+                    <ResultRow icon={<Percent className="h-4 w-4" />} label="Waste Included" value={`${wastePercentage || '0'}%`} />
+                  </div>
+
+                  <div className="border-t border-border px-5 py-4">
+                    <div className="mb-2 text-sm font-medium text-foreground">Mortar Volume</div>
+                    <ul className="space-y-1.5 text-sm text-muted-foreground">
+                      <li className="flex justify-between">
+                        <span>• Cubic Feet</span>
+                        <span className="font-medium text-foreground">{result.mortarVolumeCubicFeet.toLocaleString()} ft³</span>
+                      </li>
+                      <li className="flex justify-between">
+                        <span>• Cubic Meters</span>
+                        <span className="font-medium text-foreground">{result.mortarVolumeCubicMeters.toLocaleString()} m³</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="border-t border-border px-5 py-4">
+                    <div className="mb-2 text-sm font-medium text-foreground">Required Materials</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-lg bg-primary/5 p-3">
+                        <div className="text-xs text-muted-foreground">Cement</div>
+                        <div className="text-base font-bold text-primary">{result.cementKg.toLocaleString()} kg</div>
+                        <div className="text-xs text-muted-foreground">({result.cementBags} bags)</div>
+                      </div>
+                      <div className="rounded-lg bg-primary/5 p-3">
+                        <div className="text-xs text-muted-foreground">Sand</div>
+                        <div className="text-base font-bold text-primary">{result.sandKg.toLocaleString()} kg</div>
+                      </div>
+                      <div className="rounded-lg bg-primary/5 p-3">
+                        <div className="text-xs text-muted-foreground">Water</div>
+                        <div className="text-base font-bold text-primary">{result.waterLiters.toLocaleString()} L</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border p-5">
+                    <button
+                      onClick={exportResult}
+                      className="flex w-full cursor-pointer items-center justify-center rounded-lg bg-primary px-4 py-2.5 font-semibold text-primary-foreground transition-colors duration-200 hover:bg-primary/90"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Export Results
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="px-5 py-12 text-center">
+                  <Calculator className="mx-auto mb-3 h-12 w-12 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Enter valid wall size, block dimensions, and pricing to see a live estimate.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,7 +1,16 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
-import { Calculator, RotateCcw, Download, Info } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import {
+  Calculator,
+  ChevronDown,
+  Download,
+  Info,
+  Package,
+  Percent,
+  RotateCcw,
+  Scale,
+} from 'lucide-react';
 
 // 单位类型
 type UnitType = 'feet' | 'inches' | 'yards' | 'meters' | 'centimeters' | 'millimeters';
@@ -89,6 +98,15 @@ export default function GravelCalculator({ defaultGravelType = 'crushed-stone' }
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const unitOptions: { value: UnitType; label: string }[] = [
+    { value: 'feet', label: 'ft' },
+    { value: 'inches', label: 'in' },
+    { value: 'yards', label: 'yd' },
+    { value: 'meters', label: 'm' },
+    { value: 'centimeters', label: 'cm' },
+    { value: 'millimeters', label: 'mm' },
+  ];
+
   // 单位辅助函数
   const getUnitInfo = (unit: UnitType) => {
     switch (unit) {
@@ -109,26 +127,7 @@ export default function GravelCalculator({ defaultGravelType = 'crushed-stone' }
     }
   };
 
-  // 创建单位选择下拉菜单的辅助函数
-  const createUnitSelector = (value: UnitType, onChange: (unit: UnitType) => void, className: string = "", showMM: boolean = false) => (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value as UnitType)}
-      className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground border-border ${className}`}
-    >
-      <option value="feet">feet</option>
-      <option value="inches">inches</option>
-      <option value="yards">yards</option>
-      <option value="meters">meters</option>
-      <option value="centimeters">centimeters</option>
-      {showMM && <option value="millimeters">millimeters</option>}
-    </select>
-  );
-
-  /**
-   * 验证输入参数
-   */
-  const validateInputs = (): boolean => {
+  const getValidationErrors = (): Record<string, string> => {
     const newErrors: Record<string, string> = {};
 
     if (!params.length || parseFloat(params.length) <= 0) {
@@ -156,18 +155,13 @@ export default function GravelCalculator({ defaultGravelType = 'crushed-stone' }
       newErrors.pricePerTon = 'Please enter a valid price';
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
   };
 
   /**
    * 主计算函数
    */
-  const calculateGravel = () => {
-    if (!validateInputs()) {
-      return;
-    }
-
+  const buildCalculationResult = (): CalculationResult => {
     // 转换所有尺寸到米
     const lengthM = parseFloat(params.length) * getUnitInfo(params.lengthUnit).toMeters;
     const widthM = parseFloat(params.width) * getUnitInfo(params.widthUnit).toMeters;
@@ -203,7 +197,7 @@ export default function GravelCalculator({ defaultGravelType = 'crushed-stone' }
     const pricePerTon = parseFloat(params.pricePerTon || '0');
     const totalCost = gravelWeight * pricePerTon;
 
-    const calculatedResult: CalculationResult = {
+    return {
       volume: Math.round(volume * 1000) / 1000,
       volumeYards: Math.round(volumeYards * 100) / 100,
       volumeFeet: Math.round(volumeFeet * 100) / 100,
@@ -212,18 +206,25 @@ export default function GravelCalculator({ defaultGravelType = 'crushed-stone' }
       totalCost: Math.round(totalCost * 100) / 100,
       area: Math.round(area * 100) / 100,
     };
-
-    setResult(calculatedResult);
   };
+
+  useEffect(() => {
+    const nextErrors = getValidationErrors();
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      setResult(null);
+      return;
+    }
+
+    setResult(buildCalculationResult());
+  }, [params]);
 
   /**
    * 更新参数
    */
   const updateParam = (key: keyof ProjectParams, value: string) => {
-    setParams(prev => ({ ...prev, [key]: value }));
-    if (errors[key]) {
-      setErrors(prev => ({ ...prev, [key]: '' }));
-    }
+    setParams((prev) => ({ ...prev, [key]: value }));
   };
 
   /**
@@ -250,14 +251,7 @@ export default function GravelCalculator({ defaultGravelType = 'crushed-stone' }
    * 处理预设 Waste Factor 按钮
    */
   const setPresetWasteFactor = (factor: string) => {
-    setParams(prev => ({ ...prev, wasteFactor: factor }));
-    if (errors.wasteFactor) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors.wasteFactor;
-        return newErrors;
-      });
-    }
+    setParams((prev) => ({ ...prev, wasteFactor: factor }));
   };
 
   /**
@@ -278,8 +272,6 @@ export default function GravelCalculator({ defaultGravelType = 'crushed-stone' }
       wasteFactor: '5',
       pricePerTon: '',
     });
-    setResult(null);
-    setErrors({});
   };
 
   /**
@@ -326,357 +318,408 @@ export default function GravelCalculator({ defaultGravelType = 'crushed-stone' }
     URL.revokeObjectURL(url);
   };
 
-  // 自动计算：当参数变化且已有结果时，自动重新计算
-  useEffect(() => {
-    if (result) {
-      calculateGravel();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params]);
+  const isMetricSystem = () => getUnitInfo(params.lengthUnit).isMetric;
+
+  const metricHint = (value: string, unit?: UnitType): string | null => {
+    if (!unit) return null;
+    const info = getUnitInfo(unit);
+    if (info.isMetric) return null;
+    const numericValue = parseFloat(value);
+    if (isNaN(numericValue) || numericValue <= 0) return null;
+    return `= ${(numericValue * info.toMeters).toFixed(3)} m`;
+  };
+
+  const renderField = (
+    label: string,
+    valueKey: keyof ProjectParams,
+    opts: {
+      unitKey?: keyof ProjectParams;
+      placeholder?: string;
+      step?: string;
+      min?: string;
+      max?: string;
+      suffix?: string;
+      helperText?: string;
+      errorKey?: string;
+      allowMillimeters?: boolean;
+    } = {}
+  ) => {
+    const value = (params[valueKey] as string) ?? '';
+    const unit = opts.unitKey ? (params[opts.unitKey] as UnitType) : undefined;
+    const hint = unit ? metricHint(value, unit) : null;
+    const error = opts.errorKey ? errors[opts.errorKey] : undefined;
+    const unitItems = opts.allowMillimeters
+      ? unitOptions
+      : unitOptions.filter((option) => option.value !== 'millimeters');
+
+    return (
+      <div>
+        <label className="mb-2 block text-sm font-medium text-muted-foreground">{label}</label>
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex min-w-0 flex-1 items-stretch overflow-hidden rounded-lg border bg-background transition-shadow focus-within:border-transparent focus-within:ring-2 focus-within:ring-primary ${
+              error ? 'border-destructive' : 'border-border'
+            }`}
+          >
+            <input
+              type="number"
+              value={value}
+              onChange={(e) => updateParam(valueKey, e.target.value)}
+              placeholder={opts.placeholder}
+              step={opts.step ?? '0.01'}
+              min={opts.min ?? '0'}
+              max={opts.max}
+              className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-foreground outline-none"
+            />
+            {opts.unitKey ? (
+              <div className="relative flex w-20 shrink-0 items-center border-l border-border">
+                <select
+                  value={unit}
+                  onChange={(e) => updateParam(opts.unitKey!, e.target.value)}
+                  className="h-full w-full cursor-pointer appearance-none bg-transparent py-2.5 pl-3 pr-8 text-sm text-foreground outline-none"
+                  aria-label={`${label} unit`}
+                >
+                  {unitItems.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 h-4 w-4 text-muted-foreground" />
+              </div>
+            ) : opts.suffix ? (
+              <span className="flex w-20 shrink-0 items-center justify-center border-l border-border px-3 text-sm text-muted-foreground">
+                {opts.suffix}
+              </span>
+            ) : null}
+          </div>
+          {opts.unitKey ? (
+            <span className="w-24 shrink-0 whitespace-nowrap text-sm text-muted-foreground">{hint ?? ''}</span>
+          ) : null}
+        </div>
+        {error ? <p className="mt-1 text-sm text-destructive">{error}</p> : null}
+        {!error && opts.helperText ? (
+          <p className="mt-1 text-xs text-muted-foreground">{opts.helperText}</p>
+        ) : null}
+      </div>
+    );
+  };
+
+  const ResultRow = ({
+    icon,
+    label,
+    value,
+  }: {
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+  }) => (
+    <div className="flex items-center justify-between py-3">
+      <div className="flex items-center gap-2.5 text-sm text-foreground">
+        <span className="text-primary">{icon}</span>
+        {label}
+      </div>
+      <span className="text-sm font-semibold text-foreground">{value}</span>
+    </div>
+  );
+
+  const useMetric = isMetricSystem();
+  const primaryVolume = result ? (useMetric ? result.volume : result.volumeYards) : 0;
+  const primaryVolumeUnit = useMetric ? 'm³' : 'yd³';
+  const primaryVolumeLabel = useMetric ? 'Cubic Meters' : 'Cubic Yards';
+  const pricePerTonValue = parseFloat(params.pricePerTon || '0');
+  const wastePresetOptions = ['0', '5', '10', '15'] as const;
+  const activeWastePreset = (() => {
+    const numericValue = parseFloat(params.wasteFactor);
+    if (isNaN(numericValue)) return null;
+
+    const matchedPreset = wastePresetOptions.find((preset) => parseFloat(preset) === numericValue);
+    return matchedPreset ?? null;
+  })();
 
   return (
-    <div className="bg-card rounded-xl shadow-lg p-6">
-      <h2 className="text-2xl font-semibold text-card-foreground mb-6 flex items-center">
-        <Calculator className="mr-2 h-6 w-6" />
-        Gravel Calculator
-      </h2>
-
-      {/* Input Fields */}
-      <div className="mb-6">
-        <h3 className="text-lg font-medium text-card-foreground mb-3">
-          Area Dimensions
-        </h3>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Length
-            </label>
-            <div className="flex gap-1">
-              <input
-                type="number"
-                value={params.length}
-                onChange={(e) => updateParam('length', e.target.value)}
-                className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
-                  errors.length ? 'border-destructive' : 'border-border'
-                }`}
-                placeholder="10"
-                step="0.01"
-                min="0"
-              />
-              {createUnitSelector(params.lengthUnit, (unit) => updateParam('lengthUnit', unit), "w-24")}
-            </div>
-            {errors.length && <p className="text-destructive text-sm mt-1">{errors.length}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Width
-            </label>
-            <div className="flex gap-1">
-              <input
-                type="number"
-                value={params.width}
-                onChange={(e) => updateParam('width', e.target.value)}
-                className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
-                  errors.width ? 'border-destructive' : 'border-border'
-                }`}
-                placeholder="8"
-                step="0.01"
-                min="0"
-              />
-              {createUnitSelector(params.widthUnit, (unit) => updateParam('widthUnit', unit), "w-24")}
-            </div>
-            {errors.width && <p className="text-destructive text-sm mt-1">{errors.width}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Depth
-            </label>
-            <div className="flex gap-1">
-              <input
-                type="number"
-                value={params.depth}
-                onChange={(e) => updateParam('depth', e.target.value)}
-                className={`flex-1 px-2 py-1.5 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
-                  errors.depth ? 'border-destructive' : 'border-border'
-                }`}
-                placeholder="4"
-                step="0.01"
-                min="0"
-              />
-              {createUnitSelector(params.depthUnit, (unit) => updateParam('depthUnit', unit), "w-24", true)}
-            </div>
-            {errors.depth && <p className="text-destructive text-sm mt-1">{errors.depth}</p>}
-            <div className="mt-2 p-3 rounded-lg border border-border">
-              <div className="flex items-start space-x-2">
-                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-blue-600 dark:text-blue-400">
-                  <div className="font-medium mb-1">Typical Gravel Depths:</div>
-                  <div>• Driveways: 4-6 inches (10-15cm)</div>
-                  <div>• Walkways: 2-4 inches (5-10cm)</div>
-                  <div>• Drainage: 6-12 inches (15-30cm)</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Gravel Specifications */}
-      <div className="mb-6">
-        <h3 className="text-lg font-medium text-card-foreground mb-3">
-          Gravel Specifications
-        </h3>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Gravel Type
-            </label>
-            <select
-              value={params.gravelType}
-              onChange={(e) => handleGravelTypeChange(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground border-border"
-            >
-              {Object.entries(GRAVEL_PRESETS).map(([key, preset]) => (
-                <option key={key} value={key}>
-                  {preset.label} ({preset.density} kg/m³)
-                </option>
-              ))}
-              <option value="custom">Custom Density</option>
-            </select>
-          </div>
-
-          {params.gravelType === 'custom' && (
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-2">
-                Custom Density (kg/m³)
-              </label>
-              <input
-                type="number"
-                value={params.customDensity}
-                onChange={(e) => updateParam('customDensity', e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
-                  errors.customDensity ? 'border-destructive' : 'border-border'
-                }`}
-                placeholder="1680"
-                step="1"
-                min="0"
-              />
-              {errors.customDensity && <p className="text-destructive text-sm mt-1">{errors.customDensity}</p>}
-              <p className="text-xs text-muted-foreground mt-1">
-                Typical range: 1200-2000 kg/m³
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Waste Factor & Pricing */}
-      <div className="mb-6">
-        <h3 className="text-lg font-medium text-card-foreground mb-3">
-          Waste Factor & Pricing
-        </h3>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Waste Factor (%)
-            </label>
-            <div className="flex gap-2 mb-2">
-              <button
-                type="button"
-                onClick={() => setPresetWasteFactor('0')}
-                className={`px-3 py-1 rounded-lg border transition-colors ${
-                  params.wasteFactor === '0'
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-background text-foreground border-border hover:bg-muted'
-                }`}
-              >
-                0%
-              </button>
-              <button
-                type="button"
-                onClick={() => setPresetWasteFactor('5')}
-                className={`px-3 py-1 rounded-lg border transition-colors ${
-                  params.wasteFactor === '5'
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-background text-foreground border-border hover:bg-muted'
-                }`}
-              >
-                5%
-              </button>
-              <button
-                type="button"
-                onClick={() => setPresetWasteFactor('10')}
-                className={`px-3 py-1 rounded-lg border transition-colors ${
-                  params.wasteFactor === '10'
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-background text-foreground border-border hover:bg-muted'
-                }`}
-              >
-                10%
-              </button>
-              <button
-                type="button"
-                onClick={() => setPresetWasteFactor('15')}
-                className={`px-3 py-1 rounded-lg border transition-colors ${
-                  params.wasteFactor === '15'
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-background text-foreground border-border hover:bg-muted'
-                }`}
-              >
-                15%
-              </button>
-            </div>
-            <input
-              type="number"
-              value={params.wasteFactor}
-              onChange={(e) => updateParam('wasteFactor', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
-                errors.wasteFactor ? 'border-destructive' : 'border-border'
-              }`}
-              placeholder="5"
-              step="1"
-              min="0"
-              max="100"
-            />
-            {errors.wasteFactor && <p className="text-destructive text-sm mt-1">{errors.wasteFactor}</p>}
-            <p className="text-xs text-muted-foreground mt-1">
-              Add extra material for spillage and compaction (typically 5-10%)
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-2">
-              Price per Ton ($) <span className="text-xs font-normal">(Optional)</span>
-            </label>
-            <input
-              type="number"
-              value={params.pricePerTon}
-              onChange={(e) => updateParam('pricePerTon', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground ${
-                errors.pricePerTon ? 'border-destructive' : 'border-border'
-              }`}
-              placeholder="50.00"
-              step="0.01"
-              min="0"
-            />
-            {errors.pricePerTon && <p className="text-destructive text-sm mt-1">{errors.pricePerTon}</p>}
-          </div>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-3 mb-6">
-        <button
-          onClick={calculateGravel}
-          className="flex-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-[0.7rem] px-4 rounded-lg transition-colors duration-200 flex items-center justify-center cursor-pointer"
-        >
-          <Calculator className="mr-2 h-4 w-4" />
-          Calculate
-        </button>
-        <button
-          onClick={resetForm}
-          className="bg-secondary hover:bg-secondary/80 text-secondary-foreground font-semibold py-[0.7rem] px-4 rounded-lg transition-colors duration-200 flex items-center justify-center cursor-pointer"
-        >
-          <RotateCcw className="mr-2 h-4 w-4" />
-          Reset
-        </button>
-      </div>
-
-      {/* Results Display */}
-      {result ? (
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium text-card-foreground">
-            Calculation Results
-          </h3>
-
-          {/* Area Summary */}
-          <div className="bg-primary/10 p-4 rounded-lg border border-border">
-            <div className="text-sm text-primary font-medium mb-3">Coverage Area</div>
-            <div className="text-lg font-bold text-primary">
-              {result.area} m²
-            </div>
-          </div>
-
-          {/* Volume Summary */}
-          <div className="bg-primary/10 p-4 rounded-lg border border-border">
-            <div className="text-sm text-primary font-medium mb-3">
-              Gravel Volume (with {params.wasteFactor}% waste)
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <div className="text-xs text-muted-foreground">Cubic Meters</div>
-                <div className="text-lg font-bold text-primary">
-                  {result.volume} m³
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Cubic Yards</div>
-                <div className="text-lg font-bold text-primary">
-                  {result.volumeYards} yd³
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Cubic Feet</div>
-                <div className="text-lg font-bold text-primary">
-                  {result.volumeFeet} ft³
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Weight Summary */}
-          <div className="bg-primary/10 p-4 rounded-lg border border-border">
-            <div className="text-sm text-primary font-medium mb-3">Gravel Weight</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <div className="text-xs text-muted-foreground">Tons</div>
-                <div className="text-lg font-bold text-primary">
-                  {Number(result.gravelWeight.toFixed(3))} tons
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Kilograms</div>
-                <div className="text-lg font-bold text-primary">
-                  {result.gravelWeightKg} kg
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Cost Summary */}
-          {params.pricePerTon && parseFloat(params.pricePerTon) > 0 && (
-            <div className="bg-primary/10 p-3 rounded-lg">
-              <div className="text-sm text-primary font-medium">Total Cost</div>
-              <div className="text-xl font-bold text-primary">
-                ${result.totalCost}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                Based on ${params.pricePerTon} per ton
-              </div>
-            </div>
-          )}
-
+    <div>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="flex items-center text-2xl font-semibold text-foreground">
+          <Calculator className="mr-2 h-6 w-6" />
+          Gravel Calculator
+        </h2>
+        <div className="flex items-center gap-2">
           <button
             onClick={exportResult}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center"
+            disabled={!result}
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            title="Save results as a text file"
           >
-            <Download className="mr-2 h-4 w-4" />
-            Export Results
+            <Download className="h-4 w-4" />
+            Save
+          </button>
+          <button
+            onClick={resetForm}
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-primary px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Reset
           </button>
         </div>
-      ) : (
-        <div className="text-center py-8">
-          <Calculator className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground">
-            Enter your dimensions and specifications, then click Calculate
-          </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="space-y-6">
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <h3 className="mb-4 text-lg font-medium text-card-foreground">Area Dimensions</h3>
+            <div className="space-y-4">
+              {renderField('Length', 'length', {
+                unitKey: 'lengthUnit',
+                placeholder: '10',
+                errorKey: 'length',
+              })}
+              {renderField('Width', 'width', {
+                unitKey: 'widthUnit',
+                placeholder: '8',
+                errorKey: 'width',
+              })}
+              {renderField('Depth', 'depth', {
+                unitKey: 'depthUnit',
+                placeholder: '4',
+                errorKey: 'depth',
+                allowMillimeters: true,
+                helperText: 'Typical gravel depths: driveways 4-6 in, walkways 2-4 in, drainage 6-12 in.',
+              })}
+
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                <div className="flex items-start gap-2">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <div className="text-sm text-muted-foreground">
+                    <div className="mb-1 font-medium text-foreground">Typical Gravel Depths</div>
+                    <div>Driveways: 4-6 inches (10-15 cm)</div>
+                    <div>Walkways: 2-4 inches (5-10 cm)</div>
+                    <div>Drainage: 6-12 inches (15-30 cm)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <h3 className="mb-4 text-lg font-medium text-card-foreground">Gravel Specifications</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-muted-foreground">Gravel Type</label>
+                <div className="relative">
+                  <select
+                    value={params.gravelType}
+                    onChange={(e) => handleGravelTypeChange(e.target.value)}
+                    className="h-11 w-full cursor-pointer appearance-none rounded-lg border border-border bg-background px-3 pr-10 text-sm text-foreground outline-none transition-shadow focus:border-transparent focus:ring-2 focus:ring-primary"
+                  >
+                    {Object.entries(GRAVEL_PRESETS).map(([key, preset]) => (
+                      <option key={key} value={key}>
+                        {preset.label} ({preset.density} kg/m³)
+                      </option>
+                    ))}
+                    <option value="custom">Custom Density</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                </div>
+              </div>
+
+              {params.gravelType === 'custom' && (
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-muted-foreground">Custom Density (kg/m³)</label>
+                  <div
+                    className={`overflow-hidden rounded-lg border bg-background transition-shadow focus-within:border-transparent focus-within:ring-2 focus-within:ring-primary ${
+                      errors.customDensity ? 'border-destructive' : 'border-border'
+                    }`}
+                  >
+                    <input
+                      type="number"
+                      value={params.customDensity}
+                      onChange={(e) => updateParam('customDensity', e.target.value)}
+                      placeholder="1680"
+                      step="1"
+                      min="0"
+                      className="w-full bg-transparent px-3 py-2.5 text-sm text-foreground outline-none"
+                    />
+                  </div>
+                  {errors.customDensity ? <p className="mt-1 text-sm text-destructive">{errors.customDensity}</p> : null}
+                  {!errors.customDensity ? (
+                    <p className="mt-1 text-xs text-muted-foreground">Typical range: 1200-2000 kg/m³.</p>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <h3 className="mb-4 text-lg font-medium text-card-foreground">Waste Factor &amp; Pricing</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-muted-foreground">Waste Factor</label>
+                <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                  <div className="w-full md:max-w-[140px]">
+                    <div
+                      className={`flex items-stretch overflow-hidden rounded-lg border bg-background transition-shadow focus-within:border-transparent focus-within:ring-2 focus-within:ring-primary ${
+                        errors.wasteFactor ? 'border-destructive' : 'border-border'
+                      }`}
+                    >
+                      <input
+                        type="number"
+                        value={params.wasteFactor}
+                        onChange={(e) => updateParam('wasteFactor', e.target.value)}
+                        placeholder="5"
+                        step="1"
+                        min="0"
+                        max="100"
+                        className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-foreground outline-none"
+                      />
+                      <span className="flex w-12 shrink-0 items-center justify-center border-l border-border px-2 text-sm text-muted-foreground">
+                        %
+                      </span>
+                    </div>
+                  </div>
+                  <div className="min-w-0 flex-1 md:flex md:items-center md:gap-3">
+                    <div className="mb-2 text-sm font-medium text-muted-foreground md:mb-0 md:shrink-0">Quick Select</div>
+                    <div className="flex flex-wrap gap-1">
+                      {wastePresetOptions.map((factor) => (
+                        <button
+                          key={factor}
+                          type="button"
+                          onClick={() => setPresetWasteFactor(factor)}
+                          className={`cursor-pointer rounded-lg border px-2 py-1.5 text-sm transition-colors ${
+                            activeWastePreset === factor
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : 'border-border bg-background text-foreground hover:bg-muted'
+                          }`}
+                        >
+                          {factor}%
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {errors.wasteFactor ? <p className="mt-1 text-sm text-destructive">{errors.wasteFactor}</p> : null}
+                {!errors.wasteFactor ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Add extra material for spillage and compaction, typically 5% to 10%.
+                  </p>
+                ) : null}
+              </div>
+
+              {renderField('Price per Ton ($) Optional', 'pricePerTon', {
+                placeholder: '50.00',
+                errorKey: 'pricePerTon',
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+            <span className="text-primary">💡</span>
+            <span>
+              <span className="font-medium text-foreground">Tip:</span> Results update automatically as you change size, gravel type, waste factor, or pricing.
+            </span>
+          </div>
         </div>
-      )}
+
+        <div>
+          <div className="lg:sticky lg:top-24">
+            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+              <div className="flex items-center justify-between bg-primary px-5 py-4">
+                <h3 className="font-semibold text-primary-foreground">Estimated Results</h3>
+                <span className="flex items-center gap-1.5 text-sm text-primary-foreground/90">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-foreground/70"></span>
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-foreground"></span>
+                  </span>
+                  Live
+                </span>
+              </div>
+
+              {result ? (
+                <div>
+                  <div className="px-5 py-4">
+                    <div className="mb-1 text-sm text-muted-foreground">Total Volume</div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-4xl font-bold text-primary">{primaryVolume.toLocaleString()}</span>
+                      <span className="text-xl font-semibold text-primary">{primaryVolumeUnit}</span>
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">{primaryVolumeLabel}</div>
+                  </div>
+
+                  <div className="border-t border-border bg-primary/5 px-5 py-4">
+                    <div className="mb-1 text-sm text-muted-foreground">Estimated Cost</div>
+                    <div className="text-3xl font-bold text-primary">
+                      {pricePerTonValue > 0 ? `$${result.totalCost.toLocaleString()}` : '--'}
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {pricePerTonValue > 0 ? `Based on $${params.pricePerTon} per ton` : 'Add price per ton to estimate cost'}
+                    </div>
+                  </div>
+
+                  <div className="divide-y divide-border border-t border-border px-5">
+                    <ResultRow icon={<Scale className="h-4 w-4" />} label="Coverage Area" value={`${result.area.toLocaleString()} m²`} />
+                    <ResultRow icon={<Package className="h-4 w-4" />} label="Gravel Weight" value={`${Number(result.gravelWeight.toFixed(3))} tons`} />
+                    <ResultRow icon={<Package className="h-4 w-4" />} label="Weight (kg)" value={`${result.gravelWeightKg.toLocaleString()} kg`} />
+                    <ResultRow icon={<Percent className="h-4 w-4" />} label="Waste Included" value={`${params.wasteFactor || '0'}%`} />
+                  </div>
+
+                  <div className="border-t border-border px-5 py-4">
+                    <div className="mb-2 text-sm font-medium text-foreground">Volume Breakdown</div>
+                    <ul className="space-y-1.5 text-sm text-muted-foreground">
+                      <li className="flex justify-between">
+                        <span>• Cubic Meters</span>
+                        <span className="font-medium text-foreground">{result.volume.toLocaleString()} m³</span>
+                      </li>
+                      <li className="flex justify-between">
+                        <span>• Cubic Yards</span>
+                        <span className="font-medium text-foreground">{result.volumeYards.toLocaleString()} yd³</span>
+                      </li>
+                      <li className="flex justify-between">
+                        <span>• Cubic Feet</span>
+                        <span className="font-medium text-foreground">{result.volumeFeet.toLocaleString()} ft³</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="border-t border-border px-5 py-4">
+                    <div className="mb-2 text-sm font-medium text-foreground">Material Profile</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-lg bg-primary/5 p-3">
+                        <div className="text-xs text-muted-foreground">Gravel Type</div>
+                        <div className="text-sm font-bold text-primary">
+                          {params.gravelType === 'custom' ? 'Custom Density' : GRAVEL_PRESETS[params.gravelType]?.label}
+                        </div>
+                      </div>
+                      <div className="rounded-lg bg-primary/5 p-3">
+                        <div className="text-xs text-muted-foreground">Density</div>
+                        <div className="text-sm font-bold text-primary">
+                          {params.gravelType === 'custom' ? params.customDensity : GRAVEL_PRESETS[params.gravelType]?.density} kg/m³
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border p-5">
+                    <button
+                      onClick={exportResult}
+                      className="flex w-full cursor-pointer items-center justify-center rounded-lg bg-primary px-4 py-2.5 font-semibold text-primary-foreground transition-colors duration-200 hover:bg-primary/90"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Export Results
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="px-5 py-12 text-center">
+                  <Calculator className="mx-auto mb-3 h-12 w-12 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Enter valid dimensions and gravel details to see a live estimate.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
